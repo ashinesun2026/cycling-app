@@ -151,6 +151,27 @@ const sumHr = document.getElementById('sum-hr');
 const analysisReportContent = document.getElementById('analysis-report-content');
 const btnCloseSummary = document.getElementById('btn-close-summary');
 
+// === 0. 本地 LocalStorage 安全存取包裝 ===
+// iOS 無痕模式或部分 WebView 會封鎖 LocalStorage，拋出 SecurityError 導致 JS 崩潰。這會使按鈕完全無反應。
+function safeGetItem(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (e) {
+    console.error("無法讀取 LocalStorage (可能是 iOS 無痕模式封鎖):", e);
+    return null;
+  }
+}
+
+function safeSetItem(key, val) {
+  try {
+    localStorage.setItem(key, val);
+    return true;
+  } catch (e) {
+    console.error("無法寫入 LocalStorage (可能是 iOS 無痕模式封鎖):", e);
+    return false;
+  }
+}
+
 // === 初始化 ===
 window.addEventListener('DOMContentLoaded', () => {
   detectBluetoothSupport();
@@ -162,7 +183,6 @@ window.addEventListener('DOMContentLoaded', () => {
 // 1. 偵測 iOS 與 Web Bluetooth 支援度
 function detectBluetoothSupport() {
   if (!navigator.bluetooth) {
-    // 瀏覽器不支援藍牙 API (iOS Safari/Chrome 或一般非安全 HTTP 環境)
     bluetoothWarningBanner.classList.remove('hidden');
     console.warn("目前瀏覽器環境不支援 Web Bluetooth API。iOS 請使用 Bluefy 瀏覽器！");
   } else {
@@ -172,7 +192,7 @@ function detectBluetoothSupport() {
 
 // 2. 初始化使用者管理 (LocalStorage)
 function initUsers() {
-  const localDb = localStorage.getItem('antigravity_cycling_db');
+  const localDb = safeGetItem('antigravity_cycling_db');
   if (localDb) {
     try {
       db = JSON.parse(localDb);
@@ -193,7 +213,7 @@ function initUsers() {
 }
 
 function saveDb() {
-  localStorage.setItem('antigravity_cycling_db', JSON.stringify(db));
+  safeSetItem('antigravity_cycling_db', JSON.stringify(db));
 }
 
 // 渲染使用者下拉選單
@@ -362,7 +382,7 @@ function handleDeleteProfile() {
     
     let history = getHistoryFromStorage();
     history = history.filter(h => h.userId !== id);
-    localStorage.setItem('antigravity_cycling_history', JSON.stringify(history));
+    safeSetItem('antigravity_cycling_history', JSON.stringify(history));
     
     db.activeUserId = 'default';
     saveDb();
@@ -416,6 +436,13 @@ async function connectBike() {
     return;
   }
   
+  // 安全守衛：避免在未支援藍牙的瀏覽器點擊拋出 crash 導致按鈕失去反應
+  if (!navigator.bluetooth) {
+    updateFeedback('🚫 您的瀏覽器不支援藍牙 API。請在 iPhone 下載免費的 Bluefy 瀏覽器，並於「設定」中啟用其藍牙權限。');
+    modalGuide.classList.remove('hidden'); // 直接跳出教學導引
+    return;
+  }
+  
   try {
     updateFeedback('正在搜尋飛輪裝置...');
     
@@ -461,8 +488,7 @@ async function connectBike() {
     updateUI();
   } catch (error) {
     console.error('飛輪連線失敗:', error);
-    let errMsg = error.message || error;
-    // 如果是找不到裝置、或是藍牙被限制
+    let errMsg = error.message || error.toString();
     if (errMsg.includes('User cancelled') || errMsg.includes('cancelled')) {
       updateFeedback('連線取消：您未選擇任何藍牙設備。');
     } else {
@@ -516,6 +542,13 @@ async function connectHeartRate() {
     return;
   }
   
+  // 安全守衛
+  if (!navigator.bluetooth) {
+    updateFeedback('🚫 您的瀏覽器不支援藍牙 API。請在 iPhone 下載免費的 Bluefy 瀏覽器，並於「設定」中啟用其藍牙權限。');
+    modalGuide.classList.remove('hidden');
+    return;
+  }
+  
   try {
     updateFeedback('正在搜尋藍牙心率設備 (如 Echo 廣播)...');
     
@@ -549,7 +582,7 @@ async function connectHeartRate() {
     updateUI();
   } catch (error) {
     console.error('心率連線失敗:', error);
-    let errMsg = error.message || error;
+    let errMsg = error.message || error.toString();
     if (errMsg.includes('User cancelled') || errMsg.includes('cancelled')) {
       updateFeedback('連線取消：您未選擇任何心率設備。');
     } else {
@@ -800,7 +833,7 @@ function saveAndShowSummary() {
 
   const history = getHistoryFromStorage();
   history.unshift(record);
-  localStorage.setItem('antigravity_cycling_history', JSON.stringify(history));
+  safeSetItem('antigravity_cycling_history', JSON.stringify(history));
 
   sumTime.innerText = formatDuration(state.elapsedTime);
   sumCalories.innerText = `${Math.round(state.calories)} kcal`;
@@ -816,7 +849,7 @@ function saveAndShowSummary() {
 }
 
 function getHistoryFromStorage() {
-  const localHistory = localStorage.getItem('antigravity_cycling_history');
+  const localHistory = safeGetItem('antigravity_cycling_history');
   if (localHistory) {
     try { return JSON.parse(localHistory); } catch(e) { return []; }
   }
