@@ -15,7 +15,7 @@
   <div id="bluetooth-warning-banner" class="warning-banner hidden">
     <span class="warning-icon">📢</span>
     <div class="warning-text">
-      <strong>iPhone/iOS 用戶請注意：</strong> 偵測到目前瀏覽器未啟用藍牙功能。請使用 App Store 免費下載的 <strong>Bluefy</strong> 或 <strong>WebBLE</strong> 瀏覽器開啟此網頁，即可連接飛輪與 Apple Watch 心率。
+      <strong>iPhone/iOS 用戶請注意：</strong> 偵測到目前瀏覽器未啟用藍牙功能。請使用 App Store 免費下載的 <strong>Bluefy</strong> 瀏覽器開啟此網頁，並確保已開啟 iOS 系統設定中的 Bluefy 藍牙權限。
     </div>
   </div>
 
@@ -46,14 +46,24 @@
           <span class="toggle-label">模擬騎行</span>
         </div>
 
-        <button id="btn-connect-bike" class="btn btn-primary">
-          <span class="btn-icon">🚴</span>
-          <span id="bike-conn-text">連線飛輪</span>
-        </button>
-        <button id="btn-connect-hr" class="btn btn-secondary">
-          <span class="btn-icon">❤️</span>
-          <span id="hr-conn-text">連線心率</span>
-        </button>
+        <!-- 藍牙連線按鈕與相容模式 -->
+        <div class="connection-group">
+          <!-- 相容搜尋模式核取框 -->
+          <div class="compat-toggle-container">
+            <input type="checkbox" id="compat-mode-checkbox">
+            <label for="compat-mode-checkbox" class="compat-label-text" title="若找不到飛輪，請勾選此項以搜尋所有藍牙裝置">🔍 相容搜尋模式</label>
+          </div>
+
+          <button id="btn-connect-bike" class="btn btn-primary">
+            <span class="btn-icon">🚴</span>
+            <span id="bike-conn-text">連線飛輪</span>
+          </button>
+          <button id="btn-connect-hr" class="btn btn-secondary">
+            <span class="btn-icon">❤️</span>
+            <span id="hr-conn-text">連線心率</span>
+          </button>
+          <button id="btn-help-guide" class="btn-icon-only-btn" title="藍牙連線疑難排解與手環/手錶教學">❓ 連線幫助</button>
+        </div>
       </div>
     </header>
 
@@ -344,7 +354,6 @@
         <h2 class="card-title">歷史騎行紀錄</h2>
         <div class="history-list-container">
           <ul id="history-list" class="history-list">
-            <!-- 由 JS 動態渲染 -->
             <li class="no-records">尚未有騎行紀錄，點擊「開始騎行」來建立您的第一次訓練吧！</li>
           </ul>
         </div>
@@ -408,7 +417,6 @@
       <h3 class="modal-title text-center">今日運動結算報告</h3>
       
       <div class="modal-body">
-        <!-- 數據結算四宮格 -->
         <div class="summary-stats-grid">
           <div class="summary-stat-item">
             <span class="summary-lbl">總騎行時間</span>
@@ -436,7 +444,6 @@
           </div>
         </div>
 
-        <!-- 智慧數據建議報告區 -->
         <div class="analysis-report-container">
           <h4>💡 Antigravity 專屬運動建議與分析</h4>
           <div class="analysis-feedback-bubble">
@@ -450,6 +457,66 @@
 
       <div class="modal-footer justify-center">
         <button id="btn-close-summary" class="btn btn-primary">確認並關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal C: 連線說明引導彈窗 (Troubleshooting Guide) -->
+  <div id="modal-guide" class="modal-overlay hidden">
+    <div class="modal-card modal-guide-card">
+      <h3 class="modal-title">🧭 藍牙連線疑難排解 & 教學</h3>
+      <div class="modal-body scrollable-modal-body">
+        
+        <div class="guide-section">
+          <h4>⚠️ 為什麼我完全搜尋不到任何藍牙裝置？</h4>
+          <ol>
+            <li>
+              <strong>iOS 系統 Bluefy 權限未開啟（最常見）</strong>：<br>
+              請至 iPhone 的<strong>「設定」</strong> ➔ 往下捲動找到 <strong>「Bluefy」</strong> ➔ 確認<strong>「藍牙」權限已開啟（綠色）</strong>。如果沒開啟，瀏覽器會完全被限制掃描。
+            </li>
+            <li>
+              <strong>飛輪/心率帶正被其他軟體佔用</strong>：<br>
+              藍牙設備一次只能連接一個主機。如果您的飛輪已經跟原廠 App、Zwift、或其他手機連上了，請先將它們中斷或強制關閉那些 App。
+            </li>
+            <li>
+              <strong>使用「相容搜尋模式」</strong>：<br>
+              部分廉價或特殊飛輪沒有在廣播包中寫明其標準運動服務 UUID。<strong>勾選右上角「🔍 相容搜尋模式」</strong>，App 會改用「搜尋全部設備」的方式，這時會顯示所有附近的藍牙設備，您可以直接從清單中手動挑選您的飛輪/心率手環。
+            </li>
+          </ol>
+        </div>
+
+        <hr class="guide-divider">
+
+        <div class="guide-section">
+          <h4>⌚ 1. Apple Watch 連線教學</h4>
+          <p>Apple Watch 預設不對外廣播藍牙心率，需透過 iPhone 轉發：</p>
+          <ol>
+            <li>在 iPhone 下載免費的 <strong>Echo</strong> 或 <strong>HeartCast</strong> App。</li>
+            <li>在 Apple Watch 開啟該 App 並開始運動，它會將 Watch 心率轉發為標準藍牙廣播。</li>
+            <li>在網頁點擊「連線心率」，即可在藍牙清單中選擇並連接。</li>
+          </ol>
+        </div>
+
+        <hr class="guide-divider">
+
+        <div class="guide-section">
+          <h4>⌚ 2. 您的「運動手環」(如 RW fit) 連線評估</h4>
+          <p>根據您手環的說明書，該手環主要與「RW fit」App 連線配合：</p>
+          <ul>
+            <li><strong>方案 A（檢查手環廣播功能）</strong>：<br>
+              請在您的手機開啟 <strong>RW fit App</strong> ➔ 進入設定或裝置管理 ➔ 尋找是否有<strong>「心率廣播」</strong>、<strong>「心率分享」</strong>或<strong>「藍牙心率廣播」</strong>等功能並將其開啟。開啟後，手環就會發送標準藍牙心率，本網頁即可直接搜尋連線。
+            </li>
+            <li><strong>方案 B（直接搜尋）</strong>：<br>
+              如果找不到該功能，您可以試著<strong>開啟手環的測量模式</strong>，並在本網頁<strong>勾選「🔍 相容搜尋模式」</strong>後，點選「連線心率」，看看清單中是否能找到您的手環名稱。
+            </li>
+            <li><strong>方案 C（替代方案）</strong>：<br>
+              若手環協定完全私有化且不支援廣播，建議您直接使用 <strong>Apple Watch 搭配 Echo 方案</strong>，此方式非常穩定且資料完整。
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer justify-center">
+        <button id="btn-close-guide" class="btn btn-primary">我瞭解了</button>
       </div>
     </div>
   </div>

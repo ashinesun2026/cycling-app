@@ -10,6 +10,7 @@ const HR_MEASUREMENT_CHAR_UUID = 0x2A37;
 let state = {
   isDemoMode: false,
   isPlaying: false,
+  useCompatMode: false, // 是否使用相容連線模式 (acceptAllDevices)
   
   // 藍牙設備對象
   bikeDevice: null,
@@ -116,6 +117,12 @@ const userSelect = document.getElementById('user-select');
 const btnEditProfile = document.getElementById('btn-edit-profile');
 const historyList = document.getElementById('history-list');
 
+// 相容模式與連線說明按鈕
+const compatModeCheckbox = document.getElementById('compat-mode-checkbox');
+const btnHelpGuide = document.getElementById('btn-help-guide');
+const modalGuide = document.getElementById('modal-guide');
+const btnCloseGuide = document.getElementById('btn-close-guide');
+
 // 新增 DOM：本週累計
 const weeklyCount = document.getElementById('weekly-count');
 const weeklyTime = document.getElementById('weekly-time');
@@ -174,7 +181,6 @@ function initUsers() {
       db = { users: [DEFAULT_USER], activeUserId: 'default' };
     }
   } else {
-    // 首次開啟，寫入預設訪客帳戶
     db = {
       users: [DEFAULT_USER],
       activeUserId: 'default'
@@ -200,7 +206,6 @@ function renderUserSelect() {
     userSelect.appendChild(opt);
   });
   
-  // 新增選項
   const optNew = document.createElement('option');
   optNew.value = 'new';
   optNew.innerText = '➕ 新增使用者檔案...';
@@ -221,6 +226,20 @@ function setupEventListeners() {
   btnConnectBike.addEventListener('click', connectBike);
   btnConnectHr.addEventListener('click', connectHeartRate);
   demoToggle.addEventListener('change', handleDemoModeToggle);
+  
+  // 相容模式與說明按鈕
+  compatModeCheckbox.addEventListener('change', (e) => {
+    state.useCompatMode = e.target.checked;
+    console.log(`已切換相容模式狀態: ${state.useCompatMode}`);
+  });
+  
+  btnHelpGuide.addEventListener('click', () => {
+    modalGuide.classList.remove('hidden');
+  });
+  
+  btnCloseGuide.addEventListener('click', () => {
+    modalGuide.classList.add('hidden');
+  });
   
   // 運動控制
   btnPlayPause.addEventListener('click', handlePlayPause);
@@ -243,7 +262,6 @@ function setupEventListeners() {
   // 使用者切換事件
   userSelect.addEventListener('change', (e) => {
     if (e.target.value === 'new') {
-      // 開啟新增使用者彈窗
       openProfileModal(true);
     } else {
       db.activeUserId = e.target.value;
@@ -262,7 +280,7 @@ function setupEventListeners() {
   // 取消檔案設定
   btnCancelProfile.addEventListener('click', () => {
     modalProfile.classList.add('hidden');
-    userSelect.value = db.activeUserId; // 回復下拉選單選擇
+    userSelect.value = db.activeUserId;
   });
 
   // 刪除檔案設定
@@ -274,7 +292,7 @@ function setupEventListeners() {
   // 關閉報告視窗
   btnCloseSummary.addEventListener('click', () => {
     modalSummary.classList.add('hidden');
-    resetWorkout(); // 在確認報告後徹底重置運動數據
+    resetWorkout();
   });
 }
 
@@ -299,7 +317,6 @@ function openProfileModal(isNew = false) {
     profileWeight.value = user.weight;
     document.querySelector(`input[name="profile-gender"][value="${user.gender}"]`).checked = true;
     
-    // 預設訪客不可刪除
     if (user.id === 'default') {
       btnDeleteProfile.classList.add('hidden');
     } else {
@@ -343,12 +360,10 @@ function handleDeleteProfile() {
   if (confirm(`確定要刪除使用者「${profileName.value}」嗎？這將會清除該用戶的所有數據。`)) {
     db.users = db.users.filter(u => u.id !== id);
     
-    // 刪除此使用者的歷史紀錄
     let history = getHistoryFromStorage();
     history = history.filter(h => h.userId !== id);
     localStorage.setItem('antigravity_cycling_history', JSON.stringify(history));
     
-    // 退回到預設用戶
     db.activeUserId = 'default';
     saveDb();
     renderUserSelect();
@@ -360,11 +375,10 @@ function handleDeleteProfile() {
   }
 }
 
-// === 運動模式與強度設定 ===
+// === 運動模式設定 ===
 function setWorkoutMode(mode) {
   state.workoutMode = mode;
   
-  // 重置間歇面板
   intervalPanel.classList.add('hidden');
   if (state.intervalTimer) {
     clearInterval(state.intervalTimer);
@@ -404,10 +418,17 @@ async function connectBike() {
   
   try {
     updateFeedback('正在搜尋飛輪裝置...');
-    state.bikeDevice = await navigator.bluetooth.requestDevice({
+    
+    // 根據是否勾選「相容模式」動態設定過濾參數
+    const options = state.useCompatMode ? {
+      acceptAllDevices: true,
+      optionalServices: [FTMS_SERVICE_UUID]
+    } : {
       filters: [{ services: [FTMS_SERVICE_UUID] }],
       optionalServices: [FTMS_SERVICE_UUID]
-    });
+    };
+    
+    state.bikeDevice = await navigator.bluetooth.requestDevice(options);
     
     updateFeedback('正在連線飛輪...');
     const server = await state.bikeDevice.gatt.connect();
@@ -440,7 +461,13 @@ async function connectBike() {
     updateUI();
   } catch (error) {
     console.error('飛輪連線失敗:', error);
-    updateFeedback(`連線失敗: ${error.message || error}`);
+    let errMsg = error.message || error;
+    // 如果是找不到裝置、或是藍牙被限制
+    if (errMsg.includes('User cancelled') || errMsg.includes('cancelled')) {
+      updateFeedback('連線取消：您未選擇任何藍牙設備。');
+    } else {
+      updateFeedback(`連線失敗！請點「❓連線幫助」確認 iOS Bluefy 藍牙權限已開啟。`);
+    }
   }
 }
 
@@ -490,11 +517,18 @@ async function connectHeartRate() {
   }
   
   try {
-    updateFeedback('正在搜尋藍牙心率裝置 (如 Echo 廣播)...');
-    state.hrDevice = await navigator.bluetooth.requestDevice({
+    updateFeedback('正在搜尋藍牙心率設備 (如 Echo 廣播)...');
+    
+    // 根據是否勾選「相容模式」動態設定過濾參數
+    const options = state.useCompatMode ? {
+      acceptAllDevices: true,
+      optionalServices: [HR_SERVICE_UUID]
+    } : {
       filters: [{ services: [HR_SERVICE_UUID] }],
       optionalServices: [HR_SERVICE_UUID]
-    });
+    };
+    
+    state.hrDevice = await navigator.bluetooth.requestDevice(options);
     
     updateFeedback('正在連線心率設備...');
     const server = await state.hrDevice.gatt.connect();
@@ -515,7 +549,12 @@ async function connectHeartRate() {
     updateUI();
   } catch (error) {
     console.error('心率連線失敗:', error);
-    updateFeedback(`心率連線失敗: ${error.message || error}`);
+    let errMsg = error.message || error;
+    if (errMsg.includes('User cancelled') || errMsg.includes('cancelled')) {
+      updateFeedback('連線取消：您未選擇任何心率設備。');
+    } else {
+      updateFeedback(`連線失敗！請點「❓連線幫助」確認手環設定或 iOS 權限。`);
+    }
   }
 }
 
@@ -638,13 +677,10 @@ function pauseWorkout() {
   updateFeedback('已暫停運動，數據已暫存。若欲結束，請點擊右方「清除與存檔」。');
 }
 
-// 結算與重置處理
 function handleWorkoutResetClick() {
   if (state.elapsedTime > 5) {
-    // 騎行大於 5 秒，進行存檔並彈出智慧建議視窗
     saveAndShowSummary();
   } else {
-    // 時間太短，直接無痛重置
     resetWorkout();
   }
 }
@@ -660,7 +696,6 @@ function resetWorkout() {
   state.intervalTimeElapsed = 0;
   state.intervalPhaseIndex = 0;
   
-  // 清除統計樣本
   state.powerSamples = [];
   state.cadenceSamples = [];
   state.hrSamples = [];
@@ -679,20 +714,16 @@ function resetWorkout() {
   updateUI();
 }
 
-// 每秒計時
 function tickWorkout() {
   state.elapsedTime++;
   
-  // 時間格式化
   const hours = String(Math.floor(state.elapsedTime / 3600)).padStart(2, '0');
   const minutes = String(Math.floor((state.elapsedTime % 3600) / 60)).padStart(2, '0');
   const seconds = String(state.elapsedTime % 60).padStart(2, '0');
   valTime.innerText = `${hours}:${minutes}:${seconds}`;
   
-  // 取得當前活躍使用者的生理資訊
   const currentUser = getActiveUser();
   
-  // 卡路里消耗累計
   let kcalSec = 0;
   let method = '估算';
   
@@ -700,7 +731,6 @@ function tickWorkout() {
     kcalSec = state.power / 1000.0;
     method = '功率功';
   } else if (state.heartRate > 0) {
-    // 基於生理資料 (weight, age, gender) 的心率熱量消耗
     const hr = state.heartRate;
     const w = currentUser.weight;
     const a = currentUser.age;
@@ -713,7 +743,6 @@ function tickWorkout() {
     method = '心率';
   } else {
     if (state.speed > 0) {
-      // 根據體重做簡易速度估算
       kcalSec = (currentUser.weight * 0.08) / 60.0;
       method = '速度粗估';
     }
@@ -726,13 +755,11 @@ function tickWorkout() {
     calorieRate.innerText = `${hrRate} kcal/hr (${method})`;
   }
   
-  // 模擬里程累計
   if (state.isDemoMode && state.speed > 0) {
     state.distance += state.speed / 3600.0;
     valDistance.innerText = state.distance.toFixed(2);
   }
   
-  // 里程碑進度條
   const progressPercent = Math.min((state.distance / 10.0) * 100, 100);
   roadProgress.style.width = `${progressPercent}%`;
   roadAvatar.style.left = `${progressPercent}%`;
@@ -742,11 +769,10 @@ function tickWorkout() {
   }
 }
 
-// === 智慧數據結算存檔與建議引擎 ===
+// === 智慧數據結算存檔 ===
 function saveAndShowSummary() {
   const user = getActiveUser();
   
-  // 1. 計算平均指標
   const avgPower = state.powerSamples.length > 0 ? 
     Math.round(state.powerSamples.reduce((a,b)=>a+b, 0) / state.powerSamples.length) : 0;
   
@@ -756,7 +782,6 @@ function saveAndShowSummary() {
   const avgHr = state.hrSamples.length > 0 ? 
     Math.round(state.hrSamples.reduce((a,b)=>a+b, 0) / state.hrSamples.length) : 0;
 
-  // 2. 建構歷史物件
   const record = {
     id: 'workout_' + Date.now(),
     userId: user.id,
@@ -773,12 +798,10 @@ function saveAndShowSummary() {
     maxHr: state.maxHr
   };
 
-  // 3. 寫入 LocalStorage 歷史庫
   const history = getHistoryFromStorage();
   history.unshift(record);
   localStorage.setItem('antigravity_cycling_history', JSON.stringify(history));
 
-  // 4. 渲染結算視窗
   sumTime.innerText = formatDuration(state.elapsedTime);
   sumCalories.innerText = `${Math.round(state.calories)} kcal`;
   sumDistance.innerText = `${state.distance.toFixed(2)} km`;
@@ -786,13 +809,9 @@ function saveAndShowSummary() {
   sumCadence.innerText = `${avgCadence} RPM`;
   sumHr.innerText = avgHr > 0 ? `${avgHr} / ${state.maxHr} BPM` : '-- / -- BPM';
 
-  // 5. 啟動智慧回饋建議引擎
   generateSportsAdvice(record, user);
-
-  // 開啟結算 Modal
   modalSummary.classList.remove('hidden');
   
-  // 更新歷史列表
   loadHistory();
 }
 
@@ -804,13 +823,10 @@ function getHistoryFromStorage() {
   return [];
 }
 
-// 智慧建議生成規則
 function generateSportsAdvice(record, user) {
   analysisReportContent.innerHTML = '';
-  
   const advices = [];
   
-  // 規則 1：踏頻分析
   if (record.avgCadence > 0) {
     if (record.avgCadence < 75) {
       advices.push({
@@ -839,7 +855,6 @@ function generateSportsAdvice(record, user) {
     });
   }
 
-  // 規則 2：心率區間分析
   if (record.avgHr > 0) {
     const maxHr = 220 - user.age;
     const aerobicLower = Math.round(maxHr * 0.60);
@@ -866,13 +881,12 @@ function generateSportsAdvice(record, user) {
     }
   } else {
     advices.push({
-      title: 'Apple Watch 心率連接提醒',
+      title: '心率數據缺失',
       type: 'info',
-      text: '本次運動無心率數據。建議您下次在 iPhone 安裝 Echo / HeartCast App 廣播您的 Apple Watch 心率，App 將能依據精確的心率區間為您的運動強度提供智慧分析建議！'
+      text: '本次運動無心率數據。建議您下次在 iPhone 安裝 Echo / HeartCast App 連結您的 Apple Watch，或是開啟心率手環的「心率廣播」模式並勾選「相容模式」連線，App 將能依據精確的心率區間提供建議！'
     });
   }
 
-  // 規則 3：能量與推重比 (Power-to-weight)
   if (record.avgPower > 0) {
     const powerToWeight = (record.avgPower / user.weight).toFixed(2);
     let levelText = '基礎健康級';
@@ -886,7 +900,6 @@ function generateSportsAdvice(record, user) {
     });
   }
 
-  // 渲染至畫面上
   advices.forEach(adv => {
     const div = document.createElement('div');
     div.className = `advice-item ${adv.type === 'warning' ? 'warning' : ''}`;
@@ -895,19 +908,16 @@ function generateSportsAdvice(record, user) {
   });
 }
 
-// 載入並渲染歷史紀錄與本週累計
 function loadHistory() {
   const user = getActiveUser();
   const history = getHistoryFromStorage();
   const userHistory = history.filter(h => h.userId === user.id);
   
-  // 1. 渲染歷史紀錄列表
   historyList.innerHTML = '';
   
   if (userHistory.length === 0) {
     historyList.innerHTML = `<li class="no-records">帳戶「${user.name}」目前尚未有騎行紀錄，點擊「開始騎行」來建立您的第一次訓練吧！</li>`;
   } else {
-    // 渲染最近 10 次紀錄
     userHistory.slice(0, 10).forEach(record => {
       const li = document.createElement('li');
       li.className = 'history-item';
@@ -936,9 +946,7 @@ function loadHistory() {
         </div>
       `;
       
-      // 點擊歷史物件可重新查看該次詳細報告
       li.addEventListener('click', () => {
-        // 裝載歷史數據至結算 modal 中呈現
         sumTime.innerText = formatDuration(record.duration);
         sumCalories.innerText = `${record.calories} kcal`;
         sumDistance.innerText = `${record.distance.toFixed(2)} km`;
@@ -954,20 +962,16 @@ function loadHistory() {
     });
   }
   
-  // 2. 計算本週累計數值
   calculateWeeklyStats(userHistory);
 }
 
-// 計算本週累計運動量
 function calculateWeeklyStats(userHistory) {
   const now = new Date();
-  // 計算本週一的日期
   const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1); // 調整星期天為星期一開始
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
   const monday = new Date(now.setDate(diff));
   monday.setHours(0,0,0,0);
   
-  // 篩選本週的紀錄
   const weeklyRecords = userHistory.filter(h => new Date(h.date) >= monday);
   
   let totalTimeSec = 0;
@@ -1011,7 +1015,7 @@ function startIntervalWorkout() {
         updateFeedback('🏆 恭喜！您完成了完整的間歇挑戰！');
         intervalPanel.classList.add('hidden');
         setWorkoutMode('free');
-        saveAndShowSummary(); // 自動結束並存檔結算
+        saveAndShowSummary();
         return;
       }
       
@@ -1136,7 +1140,6 @@ function startDemoGenerator() {
     state.speed = parseFloat((baseSpeed + (Math.random() * 2 - 1)).toFixed(1));
     state.heartRate = Math.round(baseHr + (Math.random() * 4 - 2));
     
-    // 寫入數據統計樣本以供結算
     if (state.cadence > 0) state.cadenceSamples.push(state.cadence);
     if (state.power > 0) {
       state.powerSamples.push(state.power);
@@ -1184,7 +1187,6 @@ function updateUI() {
   toggleCardGlow('card-cadence', state.cadence > 90, 'card-glow-active-green');
   toggleCardGlow('card-hr', state.heartRate > 150, 'card-glow-active-red');
   
-  // 即時引導
   if (state.isPlaying) {
     if (state.workoutMode === 'free') {
       updateFeedback(`自由騎行中。目前踩踏：${state.cadence} RPM / 功率：${state.power} W。`);
@@ -1222,7 +1224,6 @@ function updateFeedback(text) {
   rideFeedback.innerText = text;
 }
 
-// === 動態 CSS 動畫速度 ===
 function updateAnimationSpeeds() {
   const root = document.documentElement;
   
@@ -1247,7 +1248,6 @@ function updateAnimationSpeeds() {
   }
 }
 
-// 輔助函式：時間格式化
 function formatDuration(totalSeconds) {
   const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
   const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
