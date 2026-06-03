@@ -1071,7 +1071,7 @@ function parseHealthImportCodeIntoForm() {
     if (raw.startsWith('http')) {
       const url = new URL(raw);
       data = Object.fromEntries(url.searchParams.entries());
-    } else if (raw.includes('=') && raw.includes('&')) {
+    } else if (raw.includes('=')) {
       data = Object.fromEntries(new URLSearchParams(raw).entries());
     } else {
       data = JSON.parse(raw);
@@ -1175,14 +1175,22 @@ function handleInboundHealthImport() {
   const hasHealthImport = ['avgHr', 'maxHr', 'activeKcal', 'exerciseMin', 'rpe', 'note'].some(key => params.has(key));
   if (!hasHealthImport) return;
 
+  const rawMetrics = Object.fromEntries(params.entries());
+  const metrics = normalizeHealthMetrics(rawMetrics);
   const latest = getLatestRecordForActiveUser();
+
   if (!latest) {
-    updateFeedback('收到健康匯入參數，但目前沒有訓練紀錄可套用。');
-    return;
+    // 跨瀏覽器/設備防呆：如果在此瀏覽器找不到歷史紀錄，將數據帶入匯入表單並打開 Modal，且填入匯入碼以供複製
+    fillHealthForm(metrics);
+    healthTargetRecordId.value = '';
+    healthImportCode.value = window.location.search;
+    modalHealthImport.classList.remove('hidden');
+    updateFeedback('已偵測到健康數據，但此瀏覽器無騎行紀錄。已填入表單，可複製下方匯入碼至 BLE Link。');
+  } else {
+    applyHealthMetricsToRecord(latest.id, metrics, { showSummary: true });
+    updateFeedback('健康資料已自動匯入！');
   }
 
-  const metrics = normalizeHealthMetrics(Object.fromEntries(params.entries()));
-  applyHealthMetricsToRecord(latest.id, metrics, { showSummary: true });
   window.history.replaceState({}, document.title, window.location.pathname);
 }
 
