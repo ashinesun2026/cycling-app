@@ -546,7 +546,7 @@ async function connectBike() {
     if (errMsg.includes('User cancelled') || errMsg.includes('cancelled')) {
       updateFeedback('連線取消：您未選擇任何藍牙設備。');
     } else {
-      updateFeedback(`連線失敗！請點「❓連線幫助」確認 iOS Bluefy 藍牙權限已開啟。`);
+      updateFeedback(`飛輪連線失敗: ${errMsg}`);
     }
   }
 }
@@ -640,7 +640,7 @@ async function connectHeartRate() {
     if (errMsg.includes('User cancelled') || errMsg.includes('cancelled')) {
       updateFeedback('連線取消：您未選擇任何心率設備。');
     } else {
-      updateFeedback(`連線失敗！請點「❓連線幫助」確認手環設定或 iOS 權限。`);
+      updateFeedback(`心率連線失敗: ${errMsg}`);
     }
   }
 }
