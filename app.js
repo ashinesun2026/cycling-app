@@ -1227,10 +1227,6 @@ function downloadHistoryWithCode(syncCode, isAutoDownload) {
         mergedUsers.push(bu);
       }
     });
-    currentDb.users = mergedUsers;
-    
-    // 儲存使用者資料庫
-    safeSetItem('antigravity_cycling_db', JSON.stringify(currentDb));
 
     // 2. 合併騎行歷史紀錄：同 ID 視為同一筆，雲端版本較新時覆蓋本機。
     const currentHistory = getHistoryFromStorage();
@@ -1258,6 +1254,20 @@ function downloadHistoryWithCode(syncCode, isAutoDownload) {
       mergedHistory[existingIndex] = bh;
       updatedCount++;
     });
+
+    const preferredUserId = backupHistory.find(record => record && record.userId)?.userId || backupDb.activeUserId || 'default';
+    if (!mergedUsers.some(user => user.id === preferredUserId)) {
+      mergedUsers.push({
+        ...DEFAULT_USER,
+        id: preferredUserId,
+        name: backupHistory.find(record => record && record.userId === preferredUserId)?.userName || '雲端使用者'
+      });
+    }
+    currentDb.users = mergedUsers;
+    currentDb.activeUserId = preferredUserId;
+
+    // 儲存使用者資料庫，並切到雲端紀錄所屬使用者，避免下載後被使用者篩選隱藏。
+    safeSetItem('antigravity_cycling_db', JSON.stringify(currentDb));
     
     // 依時間排序歷史紀錄 (最新優先)
     mergedHistory.sort((a, b) => new Date(b.startTime || 0) - new Date(a.startTime || 0));
@@ -1271,7 +1281,8 @@ function downloadHistoryWithCode(syncCode, isAutoDownload) {
     initUsers(); // 會呼叫 loadHistory() 與 updateUI()
 
     const cloudCount = backupHistory.length;
-    const syncSummary = `雲端讀取 ${cloudCount} 筆，新增 ${addedCount} 筆、更新 ${updatedCount} 筆、已存在 ${unchangedCount} 筆。`;
+    const activeUserName = currentDb.users.find(user => user.id === preferredUserId)?.name || '雲端使用者';
+    const syncSummary = `雲端同步 ${cloudCount} 筆：新增 ${addedCount}、更新 ${updatedCount}、已在手機 ${unchangedCount}。已切換到「${activeUserName}」。`;
 
     if (isAutoDownload) {
       alert(`🎉 雲端自動下載完成！\n\n${syncSummary}\n\n（使用同步碼：${syncCode}）`);
