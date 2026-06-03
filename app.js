@@ -338,6 +338,14 @@ const btnCopyImportUrl = document.getElementById('btn-copy-import-url');
 const btnExportHistory = document.getElementById('btn-export-history');
 const btnImportHistory = document.getElementById('btn-import-history');
 const syncCodeDisplay = document.getElementById('sync-code-display');
+const modalSyncCode = document.getElementById('modal-sync-code');
+const formSyncCode = document.getElementById('form-sync-code');
+const syncCodeInput = document.getElementById('sync-code-input');
+const syncModalTitle = document.getElementById('sync-modal-title');
+const syncModalHelp = document.getElementById('sync-modal-help');
+const btnCancelSyncCode = document.getElementById('btn-cancel-sync-code');
+const btnSubmitSyncCode = document.getElementById('btn-submit-sync-code');
+let pendingSyncCodeSubmit = null;
 
 // === 0. 本地 LocalStorage 安全存取包裝 ===
 // iOS 無痕模式或部分 WebView 會封鎖 LocalStorage，拋出 SecurityError 導致 JS 崩潰。這會使按鈕完全無反應。
@@ -530,6 +538,12 @@ function setupEventListeners() {
   // 歷史紀錄雲端備份與還原
   btnExportHistory.addEventListener('click', exportHistoryToCloud);
   btnImportHistory.addEventListener('click', importHistoryFromCloud);
+  if (formSyncCode) {
+    formSyncCode.addEventListener('submit', handleSyncCodeSubmit);
+  }
+  if (btnCancelSyncCode) {
+    btnCancelSyncCode.addEventListener('click', closeSyncCodeModal);
+  }
   if (syncCodeDisplay) {
     syncCodeDisplay.addEventListener('click', handleSyncCodeBadgeClick);
   }
@@ -1037,24 +1051,55 @@ function updateSyncCodeBadge() {
 function handleSyncCodeBadgeClick() {
   const syncCode = safeGetItem('antigravity_sync_code');
   if (!syncCode) return;
-  
-  const newCode = prompt(
-    `您的專屬同步碼為【${syncCode}】。\n\n如需與另一台設備綁定，請在另一台設備上點選「從雲端下載」並輸入此號碼。\n\n如果需要「修改」或「重新綁定」其他同步碼，請在下方輸入新的 6 位數同步碼；若不需要修改，請點選「取消」：`,
-    syncCode
-  );
-  
-  if (newCode === null) return; // 使用者點選取消
-  
-  const cleanCode = newCode.trim();
+
+  openSyncCodeModal({
+    title: '修改雲端同步碼',
+    help: `目前同步碼為【${syncCode.trim()}】。若要重新綁定另一台設備，請輸入新的 6 位數同步碼。`,
+    defaultValue: syncCode.trim(),
+    buttonText: '儲存同步碼',
+    onSubmit: (cleanCode) => {
+      safeSetItem('antigravity_sync_code', cleanCode);
+      updateSyncCodeBadge();
+      updateFeedback(`✅ 同步碼已修改為：${cleanCode}`);
+      closeSyncCodeModal();
+      alert(`🎉 同步碼已成功修改為【${cleanCode}】！`);
+    }
+  });
+}
+
+function openSyncCodeModal({ title, help, defaultValue = '', buttonText = '開始下載', onSubmit }) {
+  if (!modalSyncCode || !syncCodeInput) {
+    const input = prompt(help, defaultValue);
+    if (input) onSubmit(input.trim());
+    return;
+  }
+
+  pendingSyncCodeSubmit = onSubmit;
+  syncModalTitle.innerText = title;
+  syncModalHelp.innerText = help;
+  syncCodeInput.value = defaultValue;
+  if (btnSubmitSyncCode) btnSubmitSyncCode.innerText = buttonText;
+  modalSyncCode.classList.remove('hidden');
+  setTimeout(() => syncCodeInput.focus(), 50);
+}
+
+function closeSyncCodeModal() {
+  if (modalSyncCode) modalSyncCode.classList.add('hidden');
+  pendingSyncCodeSubmit = null;
+}
+
+function handleSyncCodeSubmit(e) {
+  e.preventDefault();
+  const cleanCode = (syncCodeInput?.value || '').trim();
   if (cleanCode.length !== 6 || isNaN(Number(cleanCode))) {
+    updateFeedback('❌ 同步碼格式錯誤，必須為 6 位數字。');
     alert('❌ 同步碼格式錯誤，必須為 6 位數字！');
     return;
   }
-  
-  safeSetItem('antigravity_sync_code', cleanCode);
-  updateSyncCodeBadge();
-  updateFeedback(`✅ 同步碼已修改為：${cleanCode}`);
-  alert(`🎉 同步碼已成功修改為【${cleanCode}】！`);
+
+  if (typeof pendingSyncCodeSubmit === 'function') {
+    pendingSyncCodeSubmit(cleanCode);
+  }
 }
 
 function exportHistoryToCloud() {
@@ -1118,26 +1163,32 @@ function exportHistoryToCloud() {
 }
 
 function importHistoryFromCloud() {
+  updateFeedback('已點選雲端下載。正在檢查同步碼...');
+
   let syncCode = safeGetItem('antigravity_sync_code');
   if (syncCode) {
     syncCode = syncCode.trim();
   }
-  
-  let isAutoDownload = false;
+
   if (syncCode && syncCode.length === 6 && !isNaN(Number(syncCode))) {
-    isAutoDownload = true;
-  } else {
-    // 沒有同步碼，提示使用者輸入
-    const input = prompt('請輸入另一台設備上傳時產生的 6 位數專屬同步碼進行綁定：');
-    if (!input) return;
-    syncCode = input.trim();
-    if (syncCode.length !== 6 || isNaN(Number(syncCode))) {
-      alert('❌ 同步碼格式錯誤，必須為 6 位數字！');
-      return;
-    }
-    safeSetItem('antigravity_sync_code', syncCode);
+    downloadHistoryWithCode(syncCode, true);
+    return;
   }
 
+  openSyncCodeModal({
+    title: '從雲端下載',
+    help: '請輸入另一台設備「上傳至雲端」後產生的 6 位數同步碼。',
+    defaultValue: '',
+    buttonText: '開始下載',
+    onSubmit: (cleanCode) => {
+      safeSetItem('antigravity_sync_code', cleanCode);
+      closeSyncCodeModal();
+      downloadHistoryWithCode(cleanCode, false);
+    }
+  });
+}
+
+function downloadHistoryWithCode(syncCode, isAutoDownload) {
   updateFeedback('正在從雲端下載歷史紀錄...');
 
   fetch(`https://kvdb.io/${SYNC_BUCKET}/sync_${syncCode}`)
@@ -1212,7 +1263,11 @@ function importHistoryFromCloud() {
     
     // 如果是首次輸入錯誤導致下載失敗，可以清除不正確的 sync_code
     if (!isAutoDownload) {
-      localStorage.removeItem('antigravity_sync_code');
+      try {
+        localStorage.removeItem('antigravity_sync_code');
+      } catch (e) {
+        console.error('無法清除同步碼:', e);
+      }
       updateSyncCodeBadge();
     }
   });

@@ -401,7 +401,7 @@
     
     <!-- 快取版本檢測標籤 -->
     <div style="text-align:center; padding:15px; font-size:11px; color:#555; font-family:monospace; border-top:1px dashed rgba(255,255,255,0.05); margin-top:20px;">
-      網頁快取檢測版本：<strong>v2.15 (2026-06-04 02:50)</strong>
+      網頁快取檢測版本：<strong>v2.16 (2026-06-04 03:35)</strong>
     </div>
   </div>
 
@@ -576,6 +576,29 @@
     </div>
   </div>
 
+  <!-- Modal D: 雲端同步碼輸入 -->
+  <div id="modal-sync-code" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3 class="modal-title" id="sync-modal-title">輸入雲端同步碼</h3>
+      <div class="modal-body">
+        <form id="form-sync-code" class="form-layout">
+          <div class="import-mode-box">
+            <strong>雲端下載</strong>
+            <p id="sync-modal-help">請輸入另一台設備上傳時產生的 6 位數同步碼。</p>
+          </div>
+          <div class="form-group">
+            <label for="sync-code-input">6 位數同步碼</label>
+            <input type="number" id="sync-code-input" inputmode="numeric" pattern="[0-9]*" min="100000" max="999999" placeholder="例如 513514" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-cancel-sync-code" class="btn btn-secondary" type="button">取消</button>
+        <button id="btn-submit-sync-code" class="btn btn-primary" type="submit" form="form-sync-code">開始下載</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal D: 連線說明引導彈窗 (Troubleshooting Guide) -->
   <div id="modal-guide" class="modal-overlay hidden">
     <div class="modal-card modal-guide-card">
@@ -645,6 +668,6 @@
   </div>
 
   <!-- 用於載入核心 JS 的程式 -->
-  <script src="app.js?v=2.15-sync"></script>
+  <script src="app.js?v=2.16-download"></script>
 </body>
 </html>
