@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>極簡藍牙飛輪運動儀表板</title>
+  <title>飛輪騎行訓練儀表板</title>
   <link rel="stylesheet" href="style.css?v=2.2">
   <!-- 載入 Google Fonts 設計字型 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,11 +58,11 @@
             <span class="btn-icon">🚴</span>
             <span id="bike-conn-text">連線飛輪</span>
           </button>
-          <button id="btn-connect-hr" class="btn btn-secondary">
-            <span class="btn-icon">❤️</span>
-            <span id="hr-conn-text">連線心率</span>
+          <button id="btn-health-import" class="btn btn-secondary">
+            <span class="btn-icon">📥</span>
+            <span id="health-import-text">匯入健康</span>
           </button>
-          <button id="btn-help-guide" class="btn-icon-only-btn" title="藍牙連線疑難排解與手環/手錶教學">❓ 連線幫助</button>
+          <button id="btn-help-guide" class="btn-icon-only-btn" title="飛輪連線與健康匯入說明">❓ 使用說明</button>
         </div>
       </div>
     </header>
@@ -83,20 +83,44 @@
               <p>無限制。手動調整阻力，依自己的步調前進。</p>
             </button>
 
-            <button class="workout-btn" id="mode-easy" data-mode="easy">
+            <button class="workout-btn" id="mode-recovery" data-mode="recovery">
               <div class="mode-header">
                 <span class="mode-badge badge-easy">輕鬆</span>
-                <h3>輕鬆熱身</h3>
+                <h3>恢復騎</h3>
               </div>
-              <p>低阻力 (3段) / 瓦數 80~120W。維持高轉速有氧。</p>
+              <p>低阻力 / 15 分鐘。放鬆腿部，找回踩踏節奏。</p>
             </button>
 
-            <button class="workout-btn" id="mode-moderate" data-mode="moderate">
+            <button class="workout-btn" id="mode-endurance" data-mode="endurance">
               <div class="mode-header">
                 <span class="mode-badge badge-moderate">有氧</span>
-                <h3>中等燃脂</h3>
+                <h3>有氧耐力</h3>
               </div>
-              <p>中等阻力 (8段) / 瓦數 130~170W。高效有氧燃脂區。</p>
+              <p>穩定輸出 / 30 分鐘。建立基礎心肺與長時間節奏。</p>
+            </button>
+
+            <button class="workout-btn" id="mode-tempo" data-mode="tempo">
+              <div class="mode-header">
+                <span class="mode-badge badge-tempo">節奏</span>
+                <h3>燃脂節奏</h3>
+              </div>
+              <p>中高阻力 / 20 分鐘。維持可控但有壓力的巡航。</p>
+            </button>
+
+            <button class="workout-btn" id="mode-cadence" data-mode="cadence">
+              <div class="mode-header">
+                <span class="mode-badge badge-spin">踏頻</span>
+                <h3>踏頻技巧</h3>
+              </div>
+              <p>輕阻力高轉速。訓練踩踏圓順與神經肌肉協調。</p>
+            </button>
+
+            <button class="workout-btn" id="mode-climb" data-mode="climb">
+              <div class="mode-header">
+                <span class="mode-badge badge-climb">爬坡</span>
+                <h3>爬坡肌耐力</h3>
+              </div>
+              <p>高阻力低踏頻。訓練腿力與穩定推踩控制。</p>
             </button>
 
             <button class="workout-btn" id="mode-interval" data-mode="interval">
@@ -105,6 +129,14 @@
                 <h3>間歇挑戰</h3>
               </div>
               <p>10分鐘間歇。高低強度每2分鐘循環交替。</p>
+            </button>
+
+            <button class="workout-btn" id="mode-pyramid" data-mode="pyramid">
+              <div class="mode-header">
+                <span class="mode-badge badge-hard">進階</span>
+                <h3>金字塔課表</h3>
+              </div>
+              <p>漸進加壓再降強度。訓練配速、耐受與恢復能力。</p>
             </button>
           </div>
 
@@ -202,7 +234,7 @@
 
           <!-- 即時引導語 -->
           <div class="ride-feedback" id="ride-feedback">
-            等待飛輪連線或開啟模擬騎行模式... (v2.10)
+            選擇今日訓練課表，連線飛輪或開啟模擬騎行... (v2.12)
           </div>
         </div>
       </section>
@@ -239,18 +271,18 @@
           </div>
         </div>
 
-        <!-- 心率 Card -->
+        <!-- 健康匯入 Card -->
         <div class="card metric-card" id="card-hr">
           <div class="metric-header">
-            <span class="metric-title">即時心率</span>
-            <span class="metric-icon text-red heart-beat-icon">❤️</span>
+            <span class="metric-title">健康回饋</span>
+            <span class="metric-icon text-red">📥</span>
           </div>
           <div class="metric-value-container">
-            <span class="metric-value" id="val-hr">--</span>
-            <span class="metric-unit">BPM</span>
+            <span class="metric-value metric-value-compact" id="val-hr">待匯入</span>
+            <span class="metric-unit"></span>
           </div>
           <div class="metric-footer">
-            <span class="metric-trend" id="hr-zone">無心率來源</span>
+            <span class="metric-trend" id="hr-zone">訓練後用捷徑補完健康資料</span>
           </div>
         </div>
 
@@ -320,7 +352,7 @@
       </div>
       <div class="footer-controls">
         <button id="btn-play-pause" class="btn btn-primary" disabled>開始騎行</button>
-        <button id="btn-reset" class="btn btn-secondary">清除紀錄</button>
+        <button id="btn-reset" class="btn btn-secondary">結束並存檔</button>
       </div>
     </footer>
 
@@ -362,7 +394,7 @@
     
     <!-- 快取版本檢測標籤 -->
     <div style="text-align:center; padding:15px; font-size:11px; color:#555; font-family:monospace; border-top:1px dashed rgba(255,255,255,0.05); margin-top:20px;">
-      網頁快取檢測版本：<strong>v2.10 (2026-06-03 20:35)</strong>
+      網頁快取檢測版本：<strong>v2.12 (2026-06-03 22:10)</strong>
     </div>
   </div>
 
@@ -393,7 +425,7 @@
           </div>
 
           <div class="form-group">
-            <label>性別 (用於更精準的心率熱量計算)</label>
+            <label>性別 (用於訓練強度與熱量估算)</label>
             <div class="radio-group">
               <label class="radio-label">
                 <input type="radio" name="profile-gender" value="male" checked> 男生
@@ -444,9 +476,17 @@
             <span class="summary-val text-green" id="sum-cadence">0 RPM</span>
           </div>
           <div class="summary-stat-item">
-            <span class="summary-lbl">平均 / 最大心率</span>
+            <span class="summary-lbl">健康匯入</span>
             <span class="summary-val text-red" id="sum-hr">0 / 0 BPM</span>
           </div>
+        </div>
+
+        <div class="health-import-panel" id="health-import-panel">
+          <div>
+            <strong>訓練後補完健康資料</strong>
+            <p>跑 iPhone 捷徑或手動輸入 Apple 健康摘要，系統會更新這筆訓練回饋。</p>
+          </div>
+          <button id="btn-health-import-summary" class="btn btn-secondary" type="button">匯入健康資料</button>
         </div>
 
         <div class="analysis-report-container">
@@ -466,10 +506,71 @@
     </div>
   </div>
 
-  <!-- Modal C: 連線說明引導彈窗 (Troubleshooting Guide) -->
+  <!-- Modal C: 健康資料匯入 -->
+  <div id="modal-health-import" class="modal-overlay hidden">
+    <div class="modal-card modal-health-card">
+      <h3 class="modal-title">訓練後健康資料匯入</h3>
+      <div class="modal-body">
+        <form id="form-health-import" class="form-layout">
+          <input type="hidden" id="health-target-record-id">
+
+          <div class="import-mode-box">
+            <strong>最快方式</strong>
+            <p>從 Fitness / 健康 App 看本次訓練摘要，填 4 個數字。之後可用 iPhone 捷徑自動開啟帶參數網址。</p>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="health-avg-hr">平均心率 BPM</label>
+              <input type="number" id="health-avg-hr" min="40" max="220" placeholder="例如 138">
+            </div>
+            <div class="form-group">
+              <label for="health-max-hr">最高心率 BPM</label>
+              <input type="number" id="health-max-hr" min="40" max="230" placeholder="例如 168">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="health-active-kcal">Apple Watch 主動熱量</label>
+              <input type="number" id="health-active-kcal" min="0" max="3000" placeholder="例如 240">
+            </div>
+            <div class="form-group">
+              <label for="health-exercise-min">運動分鐘</label>
+              <input type="number" id="health-exercise-min" min="0" max="300" placeholder="例如 32">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="health-rpe">主觀疲勞 RPE (1-10)</label>
+            <input type="number" id="health-rpe" min="1" max="10" placeholder="例如 7">
+          </div>
+
+          <div class="form-group">
+            <label for="health-note">備註</label>
+            <textarea id="health-note" rows="2" placeholder="例如：後段腿酸、呼吸可控、阻力略高"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="health-import-code">貼上捷徑匯入碼或 JSON (可選)</label>
+            <textarea id="health-import-code" rows="3" placeholder='例如 {"avgHr":138,"maxHr":168,"activeKcal":240,"exerciseMin":32,"rpe":7}'></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-cancel-health-import" class="btn btn-secondary">取消</button>
+        <div class="modal-footer-actions">
+          <button id="btn-parse-health-code" class="btn btn-secondary" type="button">解析匯入碼</button>
+          <button id="btn-save-health-import" class="btn btn-primary" type="submit" form="form-health-import">套用到訓練</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal D: 連線說明引導彈窗 (Troubleshooting Guide) -->
   <div id="modal-guide" class="modal-overlay hidden">
     <div class="modal-card modal-guide-card">
-      <h3 class="modal-title">🧭 藍牙連線疑難排解 & 教學</h3>
+      <h3 class="modal-title">飛輪連線與健康匯入說明</h3>
       <div class="modal-body scrollable-modal-body">
         
         <div class="guide-section">
@@ -480,12 +581,12 @@
               請至 iPhone 的<strong>「設定」</strong> ➔ 往下捲動找到 <strong>「Bluefy」</strong> ➔ 確認<strong>「藍牙」權限已開啟（綠色）</strong>。如果沒開啟，瀏覽器會完全被限制掃描。
             </li>
             <li>
-              <strong>飛輪/心率帶正被其他軟體佔用</strong>：<br>
+              <strong>飛輪正被其他軟體佔用</strong>：<br>
               藍牙設備一次只能連接一個主機。如果您的飛輪已經跟原廠 App、Zwift、或其他手機連上了，請先將它們中斷或強制關閉那些 App。
             </li>
             <li>
               <strong>使用「相容搜尋模式」</strong>：<br>
-              部分廉價或特殊飛輪沒有在廣播包中寫明其標準運動服務 UUID。<strong>勾選右上角「🔍 相容搜尋模式」</strong>，App 會改用「搜尋全部設備」的方式，這時會顯示所有附近的藍牙設備，您可以直接從清單中手動挑選您的飛輪/心率手環。
+              部分飛輪沒有在廣播包中寫明其標準運動服務 UUID。<strong>勾選右上角「🔍 相容搜尋模式」</strong>，App 會改用「搜尋全部設備」的方式，您可以從清單中手動挑選飛輪。
             </li>
           </ol>
         </div>
@@ -493,30 +594,24 @@
         <hr class="guide-divider">
 
         <div class="guide-section">
-          <h4>⌚ 1. Apple Watch 連線教學</h4>
-          <p>Apple Watch 預設不對外廣播藍牙心率，需透過 iPhone 轉發：</p>
+          <h4>訓練後健康資料匯入</h4>
+          <p>本網頁不做訓練中的手錶即時讀取。訓練後用 iPhone 捷徑或手動輸入 Apple 健康摘要，補完分析：</p>
           <ol>
-            <li>在 iPhone 下載免費的 <strong>Echo</strong> 或 <strong>HeartCast</strong> App。</li>
-            <li>在 Apple Watch 開啟該 App 並開始運動，它會將 Watch 心率轉發為標準藍牙廣播。</li>
-            <li>在網頁點擊「連線心率」，即可在藍牙清單中選擇並連接。</li>
+            <li>跑完後在 Apple Fitness / 健康 App 看本次運動摘要。</li>
+            <li>點「匯入健康」，輸入平均心率、最高心率、主動熱量、運動分鐘、RPE。</li>
+            <li>系統會把健康資料合併到最新訓練紀錄，更新回饋與下次課表建議。</li>
           </ol>
         </div>
 
         <hr class="guide-divider">
 
         <div class="guide-section">
-          <h4>⌚ 2. 您的「運動手環」(如 RW fit) 連線評估</h4>
-          <p>根據您手環的說明書，該手環主要與「RW fit」App 連線配合：</p>
+          <h4>iPhone 捷徑最簡做法</h4>
+          <p>捷徑只要問 4-5 個數字，最後開啟本網頁網址並帶入參數。網頁會自動匯入。</p>
           <ul>
-            <li><strong>方案 A（檢查手環廣播功能）</strong>：<br>
-              請在您的手機開啟 <strong>RW fit App</strong> ➔ 進入設定或裝置管理 ➔ 尋找是否有<strong>「心率廣播」</strong>、<strong>「心率分享」</strong>或<strong>「藍牙心率廣播」</strong>等功能並將其開啟。開啟後，手環就會發送標準藍牙心率，本網頁即可直接搜尋連線。
-            </li>
-            <li><strong>方案 B（直接搜尋）</strong>：<br>
-              如果找不到該功能，您可以試著<strong>開啟手環的測量模式</strong>，並在本網頁<strong>勾選「🔍 相容搜尋模式」</strong>後，點選「連線心率」，看看清單中是否能找到您的手環名稱。
-            </li>
-            <li><strong>方案 C（替代方案）</strong>：<br>
-              若手環協定完全私有化且不支援廣播，建議您直接使用 <strong>Apple Watch 搭配 Echo 方案</strong>，此方式非常穩定且資料完整。
-            </li>
+            <li>建立捷徑「飛輪健康匯入」。</li>
+            <li>依序加入「要求輸入」：平均心率、最高心率、主動熱量、運動分鐘、RPE。</li>
+            <li>最後用「打開 URL」開啟本網頁匯入網址。</li>
           </ul>
         </div>
       </div>
@@ -527,6 +622,6 @@
   </div>
 
   <!-- 用於載入核心 JS 的程式 -->
-  <script src="app.js?v=2.10"></script>
+  <script src="app.js?v=2.12"></script>
 </body>
 </html>

@@ -443,6 +443,9 @@ input:checked + .slider:before {
 .badge-easy { background-color: var(--color-green); color: var(--bg-main); }
 .badge-moderate { background-color: var(--color-blue); color: var(--text-primary); }
 .badge-hard { background-color: var(--color-red); color: var(--text-primary); }
+.badge-tempo { background-color: var(--color-yellow); color: var(--bg-main); }
+.badge-spin { background-color: var(--color-cyan); color: var(--bg-main); }
+.badge-climb { background-color: var(--color-orange); color: var(--text-primary); }
 
 .workout-btn p {
   font-size: 0.8rem;
@@ -646,6 +649,13 @@ input:checked + .slider:before {
   font-weight: 800;
   font-family: 'Outfit', sans-serif;
   letter-spacing: -1px;
+}
+
+.metric-value-compact {
+  font-size: 1.35rem;
+  letter-spacing: 0;
+  line-height: 1.25;
+  word-break: keep-all;
 }
 
 .metric-unit {
@@ -1039,7 +1049,8 @@ input:checked + .slider:before {
 }
 
 .form-group input[type="text"],
-.form-group input[type="number"] {
+.form-group input[type="number"],
+.form-group textarea {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-card);
   border-radius: 12px;
@@ -1049,9 +1060,11 @@ input:checked + .slider:before {
   font-size: 1rem;
   outline: none;
   transition: border-color 0.2s ease;
+  resize: vertical;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group textarea:focus {
   border-color: var(--color-cyan);
 }
 
@@ -1101,6 +1114,12 @@ input:checked + .slider:before {
   max-width: 580px;
 }
 
+.modal-health-card {
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
 .summary-success-badge {
   background: rgba(16, 185, 129, 0.15);
   color: var(--color-green);
@@ -1117,6 +1136,43 @@ input:checked + .slider:before {
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 20px;
+}
+
+.health-import-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(102, 252, 241, 0.04);
+  border: 1px solid rgba(102, 252, 241, 0.14);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 18px;
+}
+
+.health-import-panel strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.health-import-panel p,
+.import-mode-box p {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.import-mode-box {
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.import-mode-box strong {
+  color: var(--color-cyan);
+  font-size: 0.9rem;
 }
 
 .summary-stat-item {
@@ -1353,6 +1409,15 @@ input:checked + .slider:before {
   .summary-stats-grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .health-import-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .health-import-panel .btn {
+    justify-content: center;
+  }
 }
 
 /* 針對小螢幕 iPhone 的細緻調整 */
@@ -1378,6 +1443,22 @@ input:checked + .slider:before {
   }
   
   .weekly-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .modal-footer-actions {
+    margin-left: 0;
+    display: grid;
     grid-template-columns: 1fr;
   }
 }
