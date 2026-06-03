@@ -77,6 +77,10 @@ let state = {
   // 間歇挑戰狀態計時
   intervalTimeElapsed: 0,
   intervalPhaseIndex: 0,
+  modeStartedElapsed: 0,
+  lastAutoResistance: null,
+  lastPhaseKey: '',
+  autoStartBlocked: false,
 
   // 定時器
   mainTimer: null,
@@ -112,52 +116,52 @@ const TRAINING_PLANS = {
   recovery: {
     label: '恢復',
     title: '恢復騎',
-    targetPower: '70~105 W',
-    targetCadence: '85~95 RPM',
-    resistance: 2,
+    targetPower: '依階段',
+    targetCadence: '70~84 RPM',
+    resistance: null,
     intensity: '低',
     focus: '放鬆腿部、促進恢復',
-    coach: '恢復騎：阻力保持輕，重點是順踩和放鬆，不追求高瓦數。'
+    coach: '恢復騎：低壓力但不是空踩，讓腿有張力、呼吸能放鬆。'
   },
   endurance: {
     label: '耐力',
     title: '有氧耐力',
-    targetPower: '95~140 W',
-    targetCadence: '80~92 RPM',
-    resistance: 5,
+    targetPower: '依階段',
+    targetCadence: '72~86 RPM',
+    resistance: null,
     intensity: '中低',
     focus: '基礎心肺、長時間穩定輸出',
-    coach: '有氧耐力：把輸出維持穩定，避免一開始衝太高。'
+    coach: '有氧耐力：從暖身進入巡航，中段穩住輸出，最後兩分鐘緩和。'
   },
   tempo: {
     label: '節奏',
     title: '燃脂節奏',
-    targetPower: '135~175 W',
-    targetCadence: '78~88 RPM',
-    resistance: 8,
+    targetPower: '依階段',
+    targetCadence: '70~84 RPM',
+    resistance: null,
     intensity: '中高',
     focus: '燃脂巡航、配速耐受',
-    coach: '燃脂節奏：保持可控壓力，呼吸變深但不要爆掉。'
+    coach: '燃脂節奏：逐步加壓到可控辛苦，不靠高轉速硬撐。'
   },
   cadence: {
-    label: '踏頻',
-    title: '踏頻技巧',
-    targetPower: '90~130 W',
-    targetCadence: '95~110 RPM',
-    resistance: 4,
-    intensity: '技巧',
-    focus: '踩踏圓順、神經肌肉協調',
-    coach: '踏頻技巧：阻力不要太重，讓雙腳轉得順，不要上下跳。'
+    label: '穩踩',
+    title: '穩踩肌耐力',
+    targetPower: '依階段',
+    targetCadence: '68~82 RPM',
+    resistance: null,
+    intensity: '中',
+    focus: '穩定踩壓、肌耐力、姿勢控制',
+    coach: '穩踩肌耐力：不用高轉速，改用中高阻力練穩定推踩。'
   },
   climb: {
     label: '爬坡',
     title: '爬坡肌耐力',
-    targetPower: '160~220 W',
-    targetCadence: '60~75 RPM',
-    resistance: 12,
+    targetPower: '依階段',
+    targetCadence: '60~78 RPM',
+    resistance: null,
     intensity: '高',
     focus: '腿力、肌耐力、穩定推踩',
-    coach: '爬坡肌耐力：接受低踏頻，但要穩住身體和踩踏張力。'
+    coach: '爬坡肌耐力：低踏頻可以，重點是阻力張力、核心穩定、膝蓋軌跡。'
   },
   interval: {
     label: '間歇',
@@ -182,20 +186,59 @@ const TRAINING_PLANS = {
 };
 
 const PHASE_PLANS = {
+  recovery: [
+    { name: '暖身進入', duration: 180, resistance: 3, targetCadence: '72-82', targetPower: '70-95W', info: '先把關節熱開，踩踏順就好。' },
+    { name: '恢復巡航', duration: 480, resistance: 4, targetCadence: '72-84', targetPower: '80-110W', info: '保留輕阻力張力，不要空轉。' },
+    { name: '血流喚醒', duration: 120, resistance: 5, targetCadence: '70-80', targetPower: '95-125W', info: '短暫加一點壓力，喚醒腿部。' },
+    { name: '最後緩和', duration: 120, resistance: 2, targetCadence: '68-78', targetPower: '60-85W', info: '最後兩分鐘放鬆收操。' }
+  ],
+  endurance: [
+    { name: '暖身', duration: 300, resistance: 4, targetCadence: '72-82', targetPower: '85-115W', info: '慢慢進入，不急著拉高功率。' },
+    { name: '基礎巡航', duration: 480, resistance: 6, targetCadence: '74-86', targetPower: '110-145W', info: '找到能維持很久的呼吸節奏。' },
+    { name: '穩定主段', duration: 600, resistance: 7, targetCadence: '72-84', targetPower: '125-160W', info: '重點是穩，不是瞬間衝高。' },
+    { name: '耐力加壓', duration: 300, resistance: 8, targetCadence: '70-82', targetPower: '140-175W', info: '最後主段提高張力，但姿勢不能散。' },
+    { name: '最後緩和', duration: 120, resistance: 3, targetCadence: '68-78', targetPower: '70-95W', info: '最後兩分鐘降壓，讓呼吸回穩。' }
+  ],
+  tempo: [
+    { name: '暖身', duration: 240, resistance: 5, targetCadence: '72-82', targetPower: '95-125W', info: '先建立踩踏張力。' },
+    { name: '節奏建立', duration: 360, resistance: 8, targetCadence: '72-82', targetPower: '130-165W', info: '進入可控辛苦區。' },
+    { name: '高峰巡航', duration: 480, resistance: 10, targetCadence: '70-80', targetPower: '155-195W', info: '呼吸變深，但輸出要穩。' },
+    { name: '強度收束', duration: 120, resistance: 8, targetCadence: '72-82', targetPower: '135-170W', info: '不要突然放掉，先收住節奏。' },
+    { name: '最後緩和', duration: 120, resistance: 3, targetCadence: '68-78', targetPower: '70-95W', info: '最後兩分鐘緩和。' }
+  ],
+  cadence: [
+    { name: '暖身', duration: 240, resistance: 5, targetCadence: '72-82', targetPower: '95-125W', info: '用中等阻力建立穩定踩壓。' },
+    { name: '穩踩主段', duration: 300, resistance: 7, targetCadence: '70-80', targetPower: '120-155W', info: '不是追高轉速，重點是每一下踩得穩。' },
+    { name: '肌耐力高點', duration: 300, resistance: 9, targetCadence: '68-78', targetPower: '145-180W', info: '保持核心穩定，膝蓋不要左右晃。' },
+    { name: '節奏整理', duration: 120, resistance: 7, targetCadence: '70-82', targetPower: '120-155W', info: '把動作整理回穩定。' },
+    { name: '最後緩和', duration: 120, resistance: 3, targetCadence: '68-78', targetPower: '70-95W', info: '最後兩分鐘緩和。' }
+  ],
+  climb: [
+    { name: '暖身', duration: 240, resistance: 6, targetCadence: '70-80', targetPower: '105-135W', info: '先進入低轉高張力節奏。' },
+    { name: '坐姿爬坡', duration: 300, resistance: 10, targetCadence: '64-76', targetPower: '150-190W', info: '坐穩骨盆，讓腿穩定推踩。' },
+    { name: '陡坡高峰', duration: 240, resistance: 13, targetCadence: '60-72', targetPower: '180-230W', info: '最重階段，重點是穩，不是快。' },
+    { name: '滾動爬坡', duration: 300, resistance: 11, targetCadence: '64-76', targetPower: '160-205W', info: '稍降阻力，維持肌耐力輸出。' },
+    { name: '最後緩和', duration: 120, resistance: 4, targetCadence: '68-78', targetPower: '80-110W', info: '最後兩分鐘緩和腿部。' }
+  ],
   interval: [
-    { name: '有氧熱身', duration: 120, resistance: 3, targetCadence: '85-95', targetPower: '90-110W', info: '輕鬆踩踏，喚醒身體。' },
-    { name: '高強度衝刺', duration: 120, resistance: 10, targetCadence: '75-85', targetPower: '180-220W', info: '加重阻力，全力輸出。' },
-    { name: '動態恢復', duration: 120, resistance: 4, targetCadence: '85-90', targetPower: '100-120W', info: '放慢速度，調整呼吸。' },
-    { name: '極限爬坡', duration: 120, resistance: 12, targetCadence: '70-80', targetPower: '200-240W', info: '穩定踩壓，挑戰腿力。' },
-    { name: '緩和冷卻', duration: 120, resistance: 3, targetCadence: '80-90', targetPower: '80-100W', info: '降低強度，讓身體回穩。' }
+    { name: '暖身', duration: 180, resistance: 5, targetCadence: '72-82', targetPower: '95-125W', info: '先穩住踩踏，準備進入間歇。' },
+    { name: '加壓準備', duration: 120, resistance: 8, targetCadence: '70-80', targetPower: '130-165W', info: '慢慢提高張力，不要一開始爆衝。' },
+    { name: '衝刺一', duration: 60, resistance: 12, targetCadence: '68-78', targetPower: '185-230W', info: '一分鐘強輸出，核心穩住。' },
+    { name: '恢復一', duration: 60, resistance: 5, targetCadence: '70-82', targetPower: '85-120W', info: '降壓恢復，但保持踩踏。' },
+    { name: '衝刺二', duration: 60, resistance: 13, targetCadence: '66-76', targetPower: '195-240W', info: '第二次高峰，穩定踩壓。' },
+    { name: '恢復二', duration: 60, resistance: 5, targetCadence: '70-82', targetPower: '85-120W', info: '把呼吸拉回來。' },
+    { name: '衝刺三', duration: 60, resistance: 12, targetCadence: '68-78', targetPower: '185-230W', info: '最後一次高強度，品質優先。' },
+    { name: '恢復三', duration: 60, resistance: 5, targetCadence: '70-82', targetPower: '85-120W', info: '穩住不要停。' },
+    { name: '最後緩和', duration: 120, resistance: 3, targetCadence: '68-78', targetPower: '70-95W', info: '最後兩分鐘緩和。' }
   ],
   pyramid: [
-    { name: '暖身', duration: 90, resistance: 3, targetCadence: '85-92', targetPower: '90-115W', info: '輕鬆進入狀態。' },
-    { name: '第一階', duration: 90, resistance: 6, targetCadence: '82-90', targetPower: '120-150W', info: '逐步提高張力。' },
-    { name: '第二階', duration: 90, resistance: 9, targetCadence: '75-85', targetPower: '150-185W', info: '維持穩定呼吸。' },
-    { name: '高峰', duration: 90, resistance: 12, targetCadence: '68-78', targetPower: '185-225W', info: '最難階段，穩住節奏。' },
-    { name: '下降', duration: 90, resistance: 7, targetCadence: '80-90', targetPower: '130-160W', info: '降強度但不要放掉姿勢。' },
-    { name: '冷卻', duration: 90, resistance: 3, targetCadence: '82-92', targetPower: '80-110W', info: '放鬆收操。' }
+    { name: '暖身', duration: 180, resistance: 5, targetCadence: '72-82', targetPower: '95-125W', info: '穩定進入課表。' },
+    { name: '第一階', duration: 180, resistance: 7, targetCadence: '72-82', targetPower: '125-155W', info: '逐步提高張力。' },
+    { name: '第二階', duration: 180, resistance: 9, targetCadence: '70-80', targetPower: '150-185W', info: '呼吸加深，姿勢維持。' },
+    { name: '高峰', duration: 180, resistance: 12, targetCadence: '66-76', targetPower: '180-225W', info: '最高點，穩住不要亂衝。' },
+    { name: '下降控制', duration: 180, resistance: 9, targetCadence: '70-80', targetPower: '145-180W', info: '降低強度但不鬆掉。' },
+    { name: '耐受整理', duration: 180, resistance: 7, targetCadence: '72-82', targetPower: '120-155W', info: '把節奏整理回穩。' },
+    { name: '最後緩和', duration: 120, resistance: 3, targetCadence: '68-78', targetPower: '70-95W', info: '最後兩分鐘緩和。' }
   ]
 };
 
@@ -566,24 +609,19 @@ function setWorkoutMode(mode) {
   state.workoutMode = mode;
   const plan = TRAINING_PLANS[mode] || TRAINING_PLANS.free;
 
-  intervalPanel.classList.add('hidden');
-  if (state.intervalTimer) {
-    clearInterval(state.intervalTimer);
-    state.intervalTimer = null;
-  }
+  state.modeStartedElapsed = state.isPlaying ? state.elapsedTime : 0;
+  state.intervalTimeElapsed = 0;
+  state.intervalPhaseIndex = 0;
+  state.lastAutoResistance = null;
+  state.lastPhaseKey = '';
 
-  targetPowerZone.innerText = `目標瓦數: ${plan.targetPower}`;
-  resRange.innerText = plan.resistance ? `目標阻力: ${plan.resistance} 段` : '阻力依課表調整';
-  updateFeedback(`${plan.title}：${plan.coach}`);
-
-  if (typeof plan.resistance === 'number') {
-    adjustResistance(plan.resistance - state.resistance);
-  }
-
-  if (PHASE_PLANS[mode]) {
-    if (state.isPlaying) {
-      startIntervalWorkout();
-    }
+  if (getActivePhases().length) {
+    updateTrainingPhase({ forceResistance: true, announce: true });
+  } else {
+    intervalPanel.classList.add('hidden');
+    targetPowerZone.innerText = `目標瓦數: ${plan.targetPower}`;
+    resRange.innerText = '手動阻力';
+    updateFeedback(`${plan.title}：${plan.coach}`);
   }
 }
 
@@ -636,12 +674,13 @@ async function connectBike() {
     }
 
     state.isBikeConnected = true;
+    state.autoStartBlocked = false;
     btnConnectBike.classList.remove('btn-primary');
     btnConnectBike.classList.add('btn-secondary');
     bikeConnText.innerText = '中斷飛輪';
     btnPlayPause.disabled = false;
 
-    updateFeedback('飛輪連線成功！可以點擊下方「開始騎行」。');
+    updateFeedback('飛輪連線成功。選好課表後直接踩踏，系統會自動開始計時；也可按「手動開始」。');
     updateUI();
   } catch (error) {
     console.error('飛輪連線失敗:', error);
@@ -683,12 +722,21 @@ async function requestControl() {
 
 async function sendResistanceToBike(level) {
   if (state.controlPointChar && state.isBikeConnected) {
+    const target = Math.max(1, Math.min(24, Math.round(Number(level) || 1)));
     try {
-      const cmd = new Uint8Array([0x04, level]);
-      await state.controlPointChar.writeValueWithResponse(cmd);
-      console.log(`已向飛輪發送阻力指令: ${level}`);
+      const buffer = new ArrayBuffer(3);
+      const view = new DataView(buffer);
+      view.setUint8(0, 0x04);
+      view.setInt16(1, target * 10, true);
+      await state.controlPointChar.writeValueWithResponse(buffer);
+      console.log(`已向飛輪發送阻力指令: ${target}`);
     } catch (e) {
-      console.error("發送阻力指令失敗:", e);
+      try {
+        await state.controlPointChar.writeValueWithResponse(new Uint8Array([0x04, target]));
+        console.log(`已用相容格式發送阻力指令: ${target}`);
+      } catch (fallbackError) {
+        console.error("發送阻力指令失敗:", e, fallbackError);
+      }
     }
   }
 }
@@ -709,7 +757,6 @@ function handleIndoorBikeData(event) {
   if (flags & 0x0004) {
     state.cadence = dataView.getUint16(offset, true) / 2.0;
     offset += 2;
-    if (state.isPlaying && state.cadence > 0) state.cadenceSamples.push(state.cadence);
   }
   if (flags & 0x0008) offset += 2;
 
@@ -721,18 +768,19 @@ function handleIndoorBikeData(event) {
     offset += 3;
   }
   if (flags & 0x0020) {
-    state.resistance = dataView.getInt16(offset, true);
+    const rawResistance = dataView.getInt16(offset, true);
+    const normalizedResistance = Math.abs(rawResistance) > 24 ? rawResistance / 10 : rawResistance;
+    state.resistance = Math.max(1, Math.min(24, Math.round(normalizedResistance)));
     offset += 2;
   }
   if (flags & 0x0040) {
     state.power = dataView.getInt16(offset, true);
     offset += 2;
-    if (state.isPlaying && state.power > 0) {
-      state.powerSamples.push(state.power);
-      if (state.power > state.maxPower) state.maxPower = state.power;
-    }
   }
 
+  maybeAutoStartFromPedaling();
+  collectWorkoutSample();
+  updateTrainingPhase();
   updateUI();
   updateAnimationSpeeds();
 }
@@ -740,15 +788,17 @@ function handleIndoorBikeData(event) {
 // === 運動核心計時 ===
 function handlePlayPause() {
   if (state.isPlaying) {
-    pauseWorkout();
+    pauseWorkout('manual');
   } else {
+    state.autoStartBlocked = false;
     startWorkout();
   }
 }
 
-function startWorkout() {
+function startWorkout(trigger = 'manual') {
   if (!state.workoutStartedAt) {
     state.workoutStartedAt = new Date().toISOString();
+    state.modeStartedElapsed = state.elapsedTime;
   }
   state.isPlaying = true;
   valStateText.innerText = '騎行中';
@@ -756,18 +806,23 @@ function startWorkout() {
   btnPlayPause.classList.remove('btn-primary');
   btnPlayPause.classList.add('btn-secondary');
 
-  state.mainTimer = setInterval(tickWorkout, 1000);
+  if (!state.mainTimer) {
+    state.mainTimer = setInterval(tickWorkout, 1000);
+  }
 
-  if (PHASE_PLANS[state.workoutMode]) startIntervalWorkout();
+  updateTrainingPhase({ forceResistance: true, announce: true });
   if (state.isDemoMode) startDemoGenerator();
 
-  updateFeedback('運動已開始，衝刺吧！');
+  updateFeedback(trigger === 'auto' ? '偵測到踩踏，已自動開始計時。跟著目前課表阻力騎。' : '運動已開始。跟著課表階段騎，不用手動猜阻力。');
 }
 
-function pauseWorkout() {
+function pauseWorkout(reason = 'manual') {
   state.isPlaying = false;
+  if (reason === 'manual') {
+    state.autoStartBlocked = true;
+  }
   valStateText.innerText = '已暫停';
-  btnPlayPause.innerText = '開始騎行';
+  btnPlayPause.innerText = '手動開始';
   btnPlayPause.classList.remove('btn-secondary');
   btnPlayPause.classList.add('btn-primary');
 
@@ -793,7 +848,7 @@ function handleWorkoutResetClick() {
 }
 
 function resetWorkout(reason = 'reset') {
-  pauseWorkout();
+  pauseWorkout('reset');
   state.elapsedTime = 0;
   state.calories = 0;
   state.distance = 0.0;
@@ -802,6 +857,10 @@ function resetWorkout(reason = 'reset') {
   state.speed = 0.0;
   state.intervalTimeElapsed = 0;
   state.intervalPhaseIndex = 0;
+  state.modeStartedElapsed = 0;
+  state.lastAutoResistance = null;
+  state.lastPhaseKey = '';
+  state.autoStartBlocked = false;
   state.workoutStartedAt = null;
 
   state.powerSamples = [];
@@ -859,6 +918,8 @@ function tickWorkout() {
   const progressPercent = Math.min((state.distance / 10.0) * 100, 100);
   roadProgress.style.width = `${progressPercent}%`;
   roadAvatar.style.left = `${progressPercent}%`;
+
+  updateTrainingPhase();
 
   if (state.distance >= 10.0 && state.distance - (state.speed / 3600.0) < 10.0) {
     updateFeedback('🎉 太棒了！您已完成 10 公里虛擬里程碑！');
@@ -971,16 +1032,8 @@ function calculateIntensityScore(avgPower, weight, mode) {
 }
 
 function calculateCompletionScore(durationSeconds, mode) {
-  const targetMinutes = {
-    free: 15,
-    recovery: 15,
-    endurance: 30,
-    tempo: 20,
-    cadence: 15,
-    climb: 18,
-    interval: 10,
-    pyramid: 9
-  }[mode] || 15;
+  const phaseDuration = getPlanDuration(mode);
+  const targetMinutes = phaseDuration ? phaseDuration / 60 : 15;
   return Math.max(20, Math.min(100, Math.round((durationSeconds / 60 / targetMinutes) * 100)));
 }
 
@@ -1057,7 +1110,7 @@ function handleSaveHealthImport(e) {
     return;
   }
 
-  applyHealthMetricsToRecord(recordId, metrics);
+  applyHealthMetricsToRecord(recordId, metrics, { showSummary: true });
   modalHealthImport.classList.add('hidden');
 }
 
@@ -1065,7 +1118,8 @@ function normalizeHealthMetrics(input = {}) {
   const pick = (...keys) => keys.find(key => input[key] !== undefined && input[key] !== '');
   const toNumber = (key) => {
     if (!key) return null;
-    const value = Number(input[key]);
+    const cleaned = String(input[key]).replace(/[^\d.-]/g, '');
+    const value = Number(cleaned);
     return Number.isFinite(value) ? Math.round(value) : null;
   };
 
@@ -1086,7 +1140,7 @@ function normalizeHealthMetrics(input = {}) {
   };
 }
 
-function applyHealthMetricsToRecord(recordId, metrics) {
+function applyHealthMetricsToRecord(recordId, metrics, options = {}) {
   const history = getHistoryFromStorage();
   const targetIndex = history.findIndex(record => record.id === recordId);
   if (targetIndex < 0) {
@@ -1108,6 +1162,9 @@ function applyHealthMetricsToRecord(recordId, metrics) {
   history[targetIndex] = merged;
   safeSetItem('antigravity_cycling_history', JSON.stringify(history));
   renderSummary(merged, getActiveUser());
+  if (options.showSummary) {
+    modalSummary.classList.remove('hidden');
+  }
   loadHistory();
   updateUI();
   updateFeedback('健康資料已匯入，訓練回饋已更新。');
@@ -1125,7 +1182,7 @@ function handleInboundHealthImport() {
   }
 
   const metrics = normalizeHealthMetrics(Object.fromEntries(params.entries()));
-  applyHealthMetricsToRecord(latest.id, metrics);
+  applyHealthMetricsToRecord(latest.id, metrics, { showSummary: true });
   window.history.replaceState({}, document.title, window.location.pathname);
 }
 
@@ -1152,8 +1209,12 @@ function getNextWorkoutRecommendation(record, health = {}) {
     return '下一次安排「恢復騎」15-20 分鐘，阻力維持輕，目標是讓腿恢復，不追求瓦數。';
   }
 
+  if ((record.avgCadence || 0) < 65 && (record.avgPower || 0) < 120) {
+    return '下一次做「有氧耐力」前段，讓阻力自動從暖身慢慢加上去，目標是穩定踩壓，不是追高轉速。';
+  }
+
   if ((record.avgCadence || 0) < 75) {
-    return '下一次做「踏頻技巧」15 分鐘，把阻力放輕，專注把踏頻穩在 95 RPM 以上。';
+    return '下一次做「穩踩肌耐力」，用中等阻力維持 68-82 RPM，把每一下踩踏穩住。';
   }
 
   if ((record.stabilityScore || 0) < 65) {
@@ -1172,7 +1233,7 @@ function getNextWorkoutRecommendation(record, health = {}) {
     return '下一次建議接「恢復騎」或「有氧耐力」，讓腿部肌耐力恢復再進階。';
   }
 
-  return '下一次建議做「有氧耐力」，穩住 80-90 RPM，累積基礎能力。';
+  return '下一次建議做「有氧耐力」，跟著分段阻力從暖身、主段到最後緩和，累積穩定能力。';
 }
 
 function generateSportsAdvice(record, user) {
@@ -1180,23 +1241,23 @@ function generateSportsAdvice(record, user) {
   const advices = [];
 
   if (record.avgCadence > 0) {
-    if (record.avgCadence < 75) {
+    if (record.avgCadence < 65) {
       advices.push({
-        title: '踩踏踏頻偏慢',
+        title: '低踏頻重踩',
         type: 'warning',
-        text: `您的平均踏頻為 ${record.avgCadence} RPM。踏頻低於 75 會對膝關節造成較大的受力負擔。建議下次可調輕 1-2 段阻力，並試著將旋轉踏頻保持在 80-90 RPM，不僅能保護關節，還能有效鍛鍊心肺有氧系統。`
+        text: `平均踏頻 ${record.avgCadence} RPM。若這次是爬坡或肌耐力段，低踏頻可以接受；若功率也偏低，代表阻力可能卡太重，下一次讓課表自動阻力從暖身慢慢上去，避免膝蓋硬扛。`
       });
-    } else if (record.avgCadence <= 92) {
+    } else if (record.avgCadence <= 84) {
       advices.push({
-        title: '黃金踩踏踏頻',
+        title: '穩定踩壓區',
         type: 'success',
-        text: `您的平均踏頻為 ${record.avgCadence} RPM。這個轉速落在最有效率的有氧踩踏區間，非常優秀！這能兼顧肌肉耐力與心肺血管的運作，請繼續維持這個優秀的踩踏節奏。`
+        text: `平均踏頻 ${record.avgCadence} RPM，符合目前新版課表的穩踩取向。接下來重點不是轉更快，而是讓功率波動更小、階段切換更穩。`
       });
     } else {
       advices.push({
-        title: '高踩踏轉速',
-        type: 'success',
-        text: `您的平均踏頻為 ${record.avgCadence} RPM。轉速高代表心肺耐力正承受高度挑戰。若您覺得肌肉有些緊繃，可適度將阻力調重 1-2 段，將轉速微幅調整回 85-90 RPM，以獲得更好的腿部力量回饋。`
+        title: '轉速偏高',
+        type: 'info',
+        text: `平均踏頻 ${record.avgCadence} RPM。若不是刻意做輕鬆恢復，代表阻力張力可能不足。下一次可選「穩踩肌耐力」或「燃脂節奏」，讓阻力自動分段加上去。`
       });
     }
   } else {
@@ -1291,7 +1352,7 @@ function loadHistory() {
   historyList.innerHTML = '';
 
   if (userHistory.length === 0) {
-    historyList.innerHTML = `<li class="no-records">帳戶「${user.name}」目前尚未有騎行紀錄，點擊「開始騎行」來建立您的第一次訓練吧！</li>`;
+    historyList.innerHTML = `<li class="no-records">帳戶「${user.name}」目前尚未有騎行紀錄。連線飛輪後開始踩踏，或點「手動開始」建立第一次訓練。</li>`;
   } else {
     userHistory.slice(0, 10).forEach(record => {
       const li = document.createElement('li');
@@ -1368,75 +1429,157 @@ function calculateWeeklyStats(userHistory) {
   weeklyDistance.innerText = totalKm.toFixed(1);
 }
 
-// === 間歇挑戰排程計時 ===
+// === 分段課表與自動阻力 ===
 function startIntervalWorkout() {
-  state.intervalTimeElapsed = 0;
-  state.intervalPhaseIndex = 0;
-  intervalPanel.classList.remove('hidden');
-  const phases = getActivePhases();
-
-  updateIntervalUI();
-
-  state.intervalTimer = setInterval(() => {
-    if (!state.isPlaying) return;
-
-    state.intervalTimeElapsed++;
-    const currentPhase = phases[state.intervalPhaseIndex];
-    const remainingTime = currentPhase.duration - state.intervalTimeElapsed;
-
-    if (remainingTime <= 0) {
-      state.intervalPhaseIndex++;
-      state.intervalTimeElapsed = 0;
-
-      if (state.intervalPhaseIndex >= phases.length) {
-        clearInterval(state.intervalTimer);
-        state.intervalTimer = null;
-        updateFeedback('課表完成。系統已產生本次訓練報告，可匯入健康資料補完回饋。');
-        intervalPanel.classList.add('hidden');
-        saveAndShowSummary();
-        resetWorkout('saved');
-        return;
-      }
-
-      const nextPhase = phases[state.intervalPhaseIndex];
-      adjustResistance(nextPhase.resistance - state.resistance);
-      updateFeedback(`🔔 間歇階段切換：${nextPhase.name}！${nextPhase.info}`);
-    }
-
-    updateIntervalUI();
-  }, 1000);
+  updateTrainingPhase({ forceResistance: true, announce: true });
 }
 
-function updateIntervalUI() {
-  const phases = getActivePhases();
-  const currentPhase = phases[state.intervalPhaseIndex];
-  const remainingTime = currentPhase.duration - state.intervalTimeElapsed;
+function getActivePhases(mode = state.workoutMode) {
+  return PHASE_PLANS[mode] || [];
+}
 
-  intervalPhase.innerText = `課表階段 (${state.intervalPhaseIndex + 1}/${phases.length}): ${currentPhase.name}`;
+function getPlanDuration(mode = state.workoutMode) {
+  return getActivePhases(mode).reduce((sum, phase) => sum + phase.duration, 0);
+}
 
-  const m = String(Math.floor(remainingTime / 60)).padStart(2, '0');
-  const s = String(remainingTime % 60).padStart(2, '0');
-  intervalTimerDisp.innerText = `${m}:${s}`;
+function getModeElapsed() {
+  return Math.max(0, state.elapsedTime - state.modeStartedElapsed);
+}
 
-  const pct = (state.intervalTimeElapsed / currentPhase.duration) * 100;
+function getCurrentPhaseContext(mode = state.workoutMode, elapsed = getModeElapsed()) {
+  const phases = getActivePhases(mode);
+  if (!phases.length) return null;
+
+  const totalDuration = getPlanDuration(mode);
+  const clampedElapsed = Math.min(elapsed, Math.max(totalDuration - 1, 0));
+  let cursor = 0;
+
+  for (let i = 0; i < phases.length; i++) {
+    const phase = phases[i];
+    const phaseEnd = cursor + phase.duration;
+    if (clampedElapsed < phaseEnd || i === phases.length - 1) {
+      const phaseElapsed = Math.max(0, clampedElapsed - cursor);
+      return {
+        mode,
+        phases,
+        phase,
+        phaseIndex: i,
+        phaseElapsed,
+        phaseRemaining: Math.max(0, phase.duration - phaseElapsed),
+        totalDuration,
+        modeElapsed: elapsed,
+        planComplete: elapsed >= totalDuration
+      };
+    }
+    cursor = phaseEnd;
+  }
+
+  return null;
+}
+
+function updateTrainingPhase(options = {}) {
+  const context = getCurrentPhaseContext();
+  const plan = TRAINING_PLANS[state.workoutMode] || TRAINING_PLANS.free;
+
+  if (!context) {
+    intervalPanel.classList.add('hidden');
+    targetPowerZone.innerText = `目標瓦數: ${plan.targetPower}`;
+    resRange.innerText = '手動阻力';
+    return;
+  }
+
+  const { phase, phaseIndex, phaseElapsed, phaseRemaining, phases, planComplete } = context;
+  const phaseKey = `${state.workoutMode}:${phaseIndex}`;
+
+  state.intervalPhaseIndex = phaseIndex;
+  state.intervalTimeElapsed = phaseElapsed;
+  updateIntervalUI(context);
+
+  targetPowerZone.innerText = `目標瓦數: ${phase.targetPower}`;
+  resRange.innerText = `自動阻力: ${phase.resistance} 段`;
+
+  const shouldApplyResistance =
+    options.forceResistance ||
+    state.lastPhaseKey !== phaseKey ||
+    state.lastAutoResistance !== phase.resistance ||
+    (state.isPlaying && state.elapsedTime % 15 === 0 && state.resistance !== phase.resistance);
+
+  if (shouldApplyResistance) {
+    setResistanceLevel(phase.resistance, 'auto');
+    state.lastAutoResistance = phase.resistance;
+  }
+
+  if (options.announce || state.lastPhaseKey !== phaseKey) {
+    const next = phases[phaseIndex + 1];
+    const doneText = planComplete ? '課表時間已完成，可按「結束並存檔」，或繼續緩和騎。' : '';
+    const nextText = next ? `下一段 ${next.name}，阻力 ${next.resistance}。` : '這是最後階段。';
+    updateFeedback(`${plan.title}｜${phase.name}：阻力 ${phase.resistance}，目標 ${phase.targetCadence} RPM / ${phase.targetPower}。${phase.info} ${nextText} ${doneText}`.trim());
+  }
+
+  state.lastPhaseKey = phaseKey;
+}
+
+function updateIntervalUI(context = getCurrentPhaseContext()) {
+  if (!context) {
+    intervalPanel.classList.add('hidden');
+    return;
+  }
+
+  const { phase, phaseIndex, phaseElapsed, phaseRemaining, phases, planComplete } = context;
+  intervalPanel.classList.remove('hidden');
+  intervalPhase.innerText = `課表階段 (${phaseIndex + 1}/${phases.length}): ${phase.name}`;
+  intervalTimerDisp.innerText = planComplete ? '完成' : formatCountdown(phaseRemaining);
+
+  const pct = Math.min(100, (phaseElapsed / phase.duration) * 100);
   intervalProgress.style.width = `${pct}%`;
 
-  if (state.intervalPhaseIndex + 1 < phases.length) {
-    const nextPhase = phases[state.intervalPhaseIndex + 1];
-    intervalNextTip.innerText = `下一階段：${nextPhase.name} (阻力 ${nextPhase.resistance} 段)，預計踏頻: ${nextPhase.targetCadence} RPM`;
+  const nextPhase = phases[phaseIndex + 1];
+  if (planComplete) {
+    intervalNextTip.innerText = '課表完成：可結束存檔，或保持低阻力緩和。';
+  } else if (nextPhase) {
+    intervalNextTip.innerText = `下一階段：${nextPhase.name} (阻力 ${nextPhase.resistance} 段)，目標 ${nextPhase.targetCadence} RPM / ${nextPhase.targetPower}`;
   } else {
-    intervalNextTip.innerText = `下一階段：結束運動。加油，剩最後一里路！`;
+    intervalNextTip.innerText = '下一階段：課表結束，準備存檔與健康匯入。';
   }
 }
 
-function getActivePhases() {
-  return PHASE_PLANS[state.workoutMode] || PHASE_PLANS.interval;
+function formatCountdown(seconds) {
+  const safeSeconds = Math.max(0, Math.ceil(seconds));
+  const m = String(Math.floor(safeSeconds / 60)).padStart(2, '0');
+  const s = String(safeSeconds % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function hasPedalingSignal() {
+  return state.cadence >= 8 || state.power >= 15 || state.speed >= 2;
+}
+
+function maybeAutoStartFromPedaling() {
+  if (state.isPlaying || !state.isBikeConnected || state.isDemoMode) return;
+  if (!hasPedalingSignal()) {
+    state.autoStartBlocked = false;
+    return;
+  }
+  if (state.autoStartBlocked) return;
+  startWorkout('auto');
+}
+
+function collectWorkoutSample() {
+  if (!state.isPlaying) return;
+  if (state.cadence > 0) state.cadenceSamples.push(state.cadence);
+  if (state.power > 0) {
+    state.powerSamples.push(state.power);
+    if (state.power > state.maxPower) state.maxPower = state.power;
+  }
 }
 
 // === 手動與自動阻力微調 ===
 function adjustResistance(delta) {
-  let target = state.resistance + delta;
+  setResistanceLevel(state.resistance + delta, 'manual');
+}
 
+function setResistanceLevel(level, source = 'manual') {
+  let target = Math.round(Number(level) || state.resistance);
   if (target < 1) target = 1;
   if (target > 24) target = 24;
 
@@ -1448,6 +1591,10 @@ function adjustResistance(delta) {
   const card = document.getElementById('card-resistance');
   card.classList.add('card-glow-active-blue');
   setTimeout(() => card.classList.remove('card-glow-active-blue'), 400);
+
+  if (source === 'manual') {
+    resRange.innerText = `手動微調: ${state.resistance} 段`;
+  }
 }
 
 // === 模擬器數據產生器 (Demo Mode) ===
@@ -1456,6 +1603,7 @@ function handleDemoModeToggle(e) {
 
   if (state.isDemoMode) {
     state.isBikeConnected = true;
+    state.autoStartBlocked = false;
     btnPlayPause.disabled = false;
 
     btnConnectBike.disabled = true;
@@ -1463,7 +1611,7 @@ function handleDemoModeToggle(e) {
     bikeConnText.innerText = '模擬飛輪 (啟用)';
     healthImportText.innerText = '匯入健康';
 
-    updateFeedback('模擬騎行模式已開啟！點擊「開始騎行」體驗數值與踩踏動畫。');
+    updateFeedback('模擬騎行模式已開啟。點「手動開始」體驗分段課表、自動阻力與踩踏動畫。');
 
     if (state.isPlaying) {
       startDemoGenerator();
@@ -1487,41 +1635,19 @@ function startDemoGenerator() {
   state.demoTimer = setInterval(() => {
     if (!state.isPlaying) return;
 
-    let baseCadence = 80;
+    updateTrainingPhase();
+
+    let baseCadence = 78;
     let basePower = 120;
     let baseSpeed = 22;
+    const context = getCurrentPhaseContext();
 
-    if (state.workoutMode === 'recovery') {
-      baseCadence = 92;
-      basePower = 100;
-      baseSpeed = 20;
-    } else if (state.workoutMode === 'endurance') {
-      baseCadence = 86;
-      basePower = 125;
-      baseSpeed = 23;
-    } else if (state.workoutMode === 'tempo') {
-      baseCadence = 85;
-      basePower = 150;
-      baseSpeed = 26;
-    } else if (state.workoutMode === 'cadence') {
-      baseCadence = 102;
-      basePower = 115;
-      baseSpeed = 24;
-    } else if (state.workoutMode === 'climb') {
-      baseCadence = 70;
-      basePower = 190;
-      baseSpeed = 21;
-    } else if (PHASE_PLANS[state.workoutMode]) {
-      const currentPhase = getActivePhases()[state.intervalPhaseIndex];
-      if (currentPhase.resistance > 5) {
-        baseCadence = 78;
-        basePower = 210;
-        baseSpeed = 29;
-      } else {
-        baseCadence = 88;
-        basePower = 95;
-        baseSpeed = 19;
-      }
+    if (context) {
+      const cadenceRange = parseRange(context.phase.targetCadence);
+      const powerRange = parseRange(context.phase.targetPower);
+      if (cadenceRange) baseCadence = Math.round((cadenceRange.min + cadenceRange.max) / 2);
+      if (powerRange) basePower = Math.round((powerRange.min + powerRange.max) / 2);
+      baseSpeed = Math.max(16, Math.min(31, 16 + basePower / 14));
     }
 
     state.cadence = Math.round(baseCadence + (Math.random() * 6 - 3));
@@ -1553,14 +1679,20 @@ function updateUI() {
   valResistance.innerText = state.resistance;
   valDistance.innerText = state.distance.toFixed(2);
 
+  const currentContext = getCurrentPhaseContext();
+  const currentCadenceRange = currentContext ? parseRange(currentContext.phase.targetCadence) : null;
   if (state.cadence === 0) {
     cadenceStatus.innerText = '靜止中';
-  } else if (state.cadence < 70) {
-    cadenceStatus.innerText = '踩踏偏慢 🐢';
-  } else if (state.cadence <= 95) {
-    cadenceStatus.innerText = '效率踩踏 ⚡';
+  } else if (currentCadenceRange && state.cadence < currentCadenceRange.min) {
+    cadenceStatus.innerText = '低於本段目標';
+  } else if (currentCadenceRange && state.cadence > currentCadenceRange.max) {
+    cadenceStatus.innerText = '高於本段目標';
+  } else if (currentCadenceRange) {
+    cadenceStatus.innerText = '本段節奏內';
+  } else if (state.cadence <= 90) {
+    cadenceStatus.innerText = '穩定踩踏';
   } else {
-    cadenceStatus.innerText = '高速運轉 🚀';
+    cadenceStatus.innerText = '轉速偏高';
   }
 
   toggleCardGlow('card-power', state.power > 180, 'card-glow-active-yellow');
@@ -1570,9 +1702,6 @@ function updateUI() {
   if (state.isPlaying) {
     if (state.workoutMode === 'free') {
       updateFeedback(`自由騎行中。目前踩踏：${state.cadence} RPM / 功率：${state.power} W。`);
-    } else if (PHASE_PLANS[state.workoutMode]) {
-      const cur = getActivePhases()[state.intervalPhaseIndex];
-      updateFeedback(`課表【${cur.name}】：阻力 ${state.resistance} 段，目標踏頻 ${cur.targetCadence} RPM，目標功率 ${cur.targetPower}。`);
     } else {
       updateFeedback(getLiveCoachingText());
     }
@@ -1581,28 +1710,58 @@ function updateUI() {
 
 function getLiveCoachingText() {
   const plan = TRAINING_PLANS[state.workoutMode] || TRAINING_PLANS.free;
-  const powerRange = parseRange(plan.targetPower);
-  const cadenceRange = parseRange(plan.targetCadence);
+  const context = getCurrentPhaseContext();
+  const phase = context?.phase;
+  const powerRange = parseRange(phase?.targetPower || plan.targetPower);
+  const cadenceRange = parseRange(phase?.targetCadence || plan.targetCadence);
+  const phaseName = phase?.name || plan.title;
+  const remaining = context ? formatCountdown(context.phaseRemaining) : '--:--';
+  const planDone = context?.planComplete;
+  const advice = [];
 
-  if (cadenceRange && state.cadence > 0) {
-    if (state.cadence < cadenceRange.min) {
-      return `${plan.title}：踏頻偏低，先把轉速拉回 ${plan.targetCadence}。`;
-    }
-    if (state.cadence > cadenceRange.max) {
-      return `${plan.title}：踏頻偏高，穩住上半身，必要時加一段阻力。`;
-    }
+  if (phase) {
+    advice.push(`阻力 ${phase.resistance}`);
   }
 
   if (powerRange && state.power > 0) {
     if (state.power < powerRange.min) {
-      return `${plan.title}：功率低於目標，慢慢加壓，不要突然衝。`;
+      advice.push(`功率偏低，先穩住姿勢，再把踩壓拉到 ${phase.targetPower}`);
+    } else if (state.power > powerRange.max) {
+      advice.push('功率偏高，這段先收住，避免後段掉速');
+    } else {
+      advice.push('功率在目標內');
     }
-    if (state.power > powerRange.max) {
-      return `${plan.title}：功率高於目標，這段先收住，保留後段品質。`;
-    }
+  } else if (phase) {
+    advice.push(`目標功率 ${phase.targetPower}`);
   }
 
-  return `${plan.title}：節奏穩定，維持 ${plan.targetCadence} 與 ${plan.targetPower}。`;
+  if (cadenceRange && state.cadence > 0) {
+    if (state.cadence < cadenceRange.min) {
+      if (powerRange && state.power >= powerRange.min) {
+        advice.push('踏頻低但功率夠，這是重踩段可接受；保持膝蓋直線和核心穩定');
+      } else {
+        advice.push(`踏頻低於本段目標 ${phase.targetCadence}，不是硬追高轉；先確認阻力是否太重，再小幅加快`);
+      }
+    } else if (state.cadence > cadenceRange.max) {
+      advice.push('踏頻高於本段目標，阻力張力可能不夠；保持順踩，必要時讓自動阻力接管');
+    } else {
+      advice.push('踏頻在本段目標內');
+    }
+  } else if (phase) {
+    advice.push(`目標踏頻 ${phase.targetCadence} RPM`);
+  }
+
+  if (context && context.modeElapsed < 180) {
+    advice.push('前 3 分鐘不要衝，讓呼吸和腿溫上來');
+  } else if (context && context.phaseRemaining <= 30 && !planDone) {
+    advice.push('剩 30 秒準備切換，先把呼吸整理好');
+  }
+
+  if (planDone) {
+    advice.push('課表已完成，可結束存檔或繼續低阻力緩和');
+  }
+
+  return `${plan.title}｜${phaseName} 剩 ${remaining}：${advice.slice(0, 4).join('；')}。`;
 }
 
 function toggleCardGlow(id, condition, glowClass) {

@@ -104,15 +104,15 @@
                 <span class="mode-badge badge-tempo">節奏</span>
                 <h3>燃脂節奏</h3>
               </div>
-              <p>中高阻力 / 20 分鐘。維持可控但有壓力的巡航。</p>
+              <p>22 分鐘分段加壓。暖身、節奏建立、高峰巡航、最後緩和。</p>
             </button>
 
             <button class="workout-btn" id="mode-cadence" data-mode="cadence">
               <div class="mode-header">
-                <span class="mode-badge badge-spin">踏頻</span>
-                <h3>踏頻技巧</h3>
+                <span class="mode-badge badge-spin">穩踩</span>
+                <h3>穩踩肌耐力</h3>
               </div>
-              <p>輕阻力高轉速。訓練踩踏圓順與神經肌肉協調。</p>
+              <p>中高阻力穩定踩壓。避開高轉低阻，訓練腿部控制。</p>
             </button>
 
             <button class="workout-btn" id="mode-climb" data-mode="climb">
@@ -128,7 +128,7 @@
                 <span class="mode-badge badge-hard">挑戰</span>
                 <h3>間歇挑戰</h3>
               </div>
-              <p>10分鐘間歇。高低強度每2分鐘循環交替。</p>
+              <p>14 分鐘間歇。暖身後三組高強度與恢復，最後兩分鐘緩和。</p>
             </button>
 
             <button class="workout-btn" id="mode-pyramid" data-mode="pyramid">
@@ -136,11 +136,11 @@
                 <span class="mode-badge badge-hard">進階</span>
                 <h3>金字塔課表</h3>
               </div>
-              <p>漸進加壓再降強度。訓練配速、耐受與恢復能力。</p>
+              <p>20 分鐘金字塔。漸進加壓、最高點、下降控制、最後緩和。</p>
             </button>
           </div>
 
-          <!-- 間歇挑戰計時面板 (預設隱藏) -->
+          <!-- 分段課表計時面板 (預設隱藏) -->
           <div id="interval-panel" class="interval-panel hidden">
             <div class="interval-status">
               <span class="interval-phase" id="interval-phase">熱身中</span>
@@ -234,7 +234,7 @@
 
           <!-- 即時引導語 -->
           <div class="ride-feedback" id="ride-feedback">
-            選擇今日訓練課表，連線飛輪或開啟模擬騎行... (v2.12)
+            選擇課表後直接踩踏會自動開始計時，阻力會依階段切換... (v2.13)
           </div>
         </div>
       </section>
@@ -351,7 +351,7 @@
         <div class="milestone ms-end">10 km (終點)</div>
       </div>
       <div class="footer-controls">
-        <button id="btn-play-pause" class="btn btn-primary" disabled>開始騎行</button>
+        <button id="btn-play-pause" class="btn btn-primary" disabled>手動開始</button>
         <button id="btn-reset" class="btn btn-secondary">結束並存檔</button>
       </div>
     </footer>
@@ -386,7 +386,7 @@
         <h2 class="card-title">歷史騎行紀錄</h2>
         <div class="history-list-container">
           <ul id="history-list" class="history-list">
-            <li class="no-records">尚未有騎行紀錄，點擊「開始騎行」來建立您的第一次訓練吧！</li>
+            <li class="no-records">尚未有騎行紀錄，連線飛輪後開始踩踏，或點「手動開始」建立第一次訓練。</li>
           </ul>
         </div>
       </div>
@@ -394,7 +394,7 @@
     
     <!-- 快取版本檢測標籤 -->
     <div style="text-align:center; padding:15px; font-size:11px; color:#555; font-family:monospace; border-top:1px dashed rgba(255,255,255,0.05); margin-top:20px;">
-      網頁快取檢測版本：<strong>v2.12 (2026-06-03 22:10)</strong>
+      網頁快取檢測版本：<strong>v2.13 (2026-06-03 23:20)</strong>
     </div>
   </div>
 
@@ -622,6 +622,6 @@
   </div>
 
   <!-- 用於載入核心 JS 的程式 -->
-  <script src="app.js?v=2.12"></script>
+  <script src="app.js?v=2.13"></script>
 </body>
 </html>
