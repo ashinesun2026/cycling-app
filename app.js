@@ -1063,7 +1063,17 @@ function openHealthImportModal(recordId = null) {
   if (btnCopyImportUrl) btnCopyImportUrl.classList.add('hidden');
   const target = recordId ? findRecordById(recordId) : getLatestRecordForActiveUser();
   if (!target) {
-    updateFeedback('目前沒有可匯入的訓練紀錄。請先完成一次騎行。');
+    // 即使沒有騎行紀錄，也允許開啟彈窗進行解析，但給予明確引導
+    healthTargetRecordId.value = '';
+    healthAvgHr.value = '';
+    healthMaxHr.value = '';
+    healthActiveKcal.value = '';
+    healthExerciseMin.value = '';
+    healthRpe.value = '';
+    healthNote.value = '';
+    healthImportCode.value = '';
+    modalHealthImport.classList.remove('hidden');
+    showHealthImportFeedback('⚠️ 目前在此瀏覽器找不到任何騎行紀錄。您可以先貼上匯入網址進行「解析」，但必須在此瀏覽器先進行一次騎行並存檔，才能將數據「套用到訓練」。', 'info');
     return;
   }
 
