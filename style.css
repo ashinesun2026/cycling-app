@@ -523,8 +523,16 @@ input:checked + .slider:before {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
   min-height: 280px;
+}
+
+.feedback-card {
+  padding: 16px;
+}
+
+.feedback-card .ride-feedback {
+  margin-top: 0;
 }
 
 .visualizer-container {
@@ -1076,12 +1084,14 @@ input:checked + .slider:before {
   border-radius: 24px;
   width: 100%;
   max-width: 480px;
+  max-height: min(92dvh, 760px);
   padding: 24px;
   box-shadow: 0 20px 50px rgba(0,0,0,0.6);
   display: flex;
   flex-direction: column;
   gap: 20px;
   animation: modalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
 }
 
 @keyframes modalEnter {
@@ -1095,6 +1105,32 @@ input:checked + .slider:before {
   background: linear-gradient(to right, #ffffff, var(--color-cyan));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.modal-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 34px;
+  flex-shrink: 0;
+}
+
+.modal-back-btn {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .text-center { text-align: center; }
@@ -1172,6 +1208,7 @@ input:checked + .slider:before {
   align-items: center;
   border-top: 1px solid var(--border-card);
   padding-top: 16px;
+  flex-shrink: 0;
 }
 
 .modal-footer-actions {
@@ -1220,8 +1257,6 @@ input:checked + .slider:before {
 
 .modal-health-card {
   max-width: 620px;
-  max-height: 90vh;
-  overflow-y: auto;
 }
 
 .summary-success-badge {
@@ -1357,8 +1392,7 @@ input:checked + .slider:before {
 }
 
 .scrollable-modal-body {
-  max-height: 55vh;
-  overflow-y: auto;
+  max-height: none;
   padding-right: 8px;
   text-align: left;
 }
@@ -1418,23 +1452,99 @@ input:checked + .slider:before {
   }
 }
 
+@media (min-width: 769px) and (max-width: 1180px) {
+  .app-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .left-section {
+    display: contents;
+  }
+
+  .feedback-card {
+    order: 1;
+    padding: 16px;
+  }
+
+  .right-section {
+    order: 2;
+  }
+
+  .visual-card {
+    order: 3;
+    min-height: auto;
+    gap: 12px;
+  }
+
+  .workout-card {
+    order: 4;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  #card-power { order: 1; }
+  #card-cadence { order: 2; }
+  #card-resistance { order: 3; }
+  #card-time { order: 4; }
+  #card-calories { order: 5; }
+  #card-hr { order: 6; }
+
+  .metric-card {
+    min-height: 118px;
+    padding: 14px;
+  }
+
+  .metric-value {
+    font-size: 2rem;
+    letter-spacing: 0;
+  }
+
+  .text-timer {
+    font-size: 1.5rem;
+  }
+
+  .visualizer-container {
+    order: 2;
+    height: 130px;
+  }
+
+  .cyclist-svg-wrapper {
+    width: 200px;
+  }
+
+  .ride-feedback {
+    order: 1;
+    margin-top: 0;
+    padding: 16px;
+    text-align: left;
+    font-size: 1.12rem;
+    line-height: 1.55;
+    color: var(--text-primary);
+    border-left: 0;
+    border-top: 4px solid var(--color-teal);
+  }
+}
+
 @media (max-width: 768px) {
   .app-container {
-    padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 148px);
+    padding: calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 142px);
     gap: 12px;
   }
 
   .app-header {
-    position: sticky;
-    top: 0;
-    z-index: 1200;
+    position: static;
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
-    background: rgba(11, 12, 16, 0.92);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    padding: 8px 0 10px;
+    gap: 8px;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding: 2px 0 8px;
     border-bottom-color: rgba(102, 252, 241, 0.16);
   }
 
@@ -1443,7 +1553,7 @@ input:checked + .slider:before {
   }
 
   .brand h1 {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     letter-spacing: 0;
   }
 
@@ -1452,20 +1562,20 @@ input:checked + .slider:before {
     grid-template-columns: 1fr auto;
     align-items: stretch;
     width: 100%;
-    gap: 8px;
+    gap: 6px;
   }
 
   .user-switcher-container {
     width: 100%;
     justify-content: space-between;
-    padding: 8px 10px;
+    padding: 6px 8px;
     border-radius: 10px;
   }
 
   .toggle-container {
     width: 100%;
     justify-content: space-between;
-    padding: 8px 10px;
+    padding: 6px 8px;
     border-radius: 10px;
   }
 
@@ -1474,14 +1584,14 @@ input:checked + .slider:before {
     width: 100%;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 6px;
   }
 
-  /* 相容模式橫跨整列 */
   .compat-toggle-container {
-    grid-column: span 2;
+    grid-column: span 1;
     justify-content: center;
-    padding: 8px;
+    padding: 7px 8px;
+    min-height: 38px;
   }
 
   .connection-group .btn {
@@ -1490,9 +1600,11 @@ input:checked + .slider:before {
   }
 
   .btn-icon-only-btn {
-    grid-column: span 2;
+    grid-column: span 1;
     width: 100%;
     text-align: center;
+    min-height: 38px;
+    padding: 8px;
   }
 
   .workout-options {
@@ -1531,14 +1643,20 @@ input:checked + .slider:before {
   .app-main {
     display: flex;
     flex-direction: column;
+    gap: 12px;
   }
 
   .left-section {
     display: contents;
   }
 
-  .workout-card {
+  .feedback-card {
     order: 1;
+    padding: 12px;
+  }
+
+  .workout-card {
+    order: 4;
   }
 
   .right-section {
@@ -1569,33 +1687,52 @@ input:checked + .slider:before {
 
   .visual-card {
     min-height: auto;
+    gap: 10px;
   }
 
   .visualizer-container {
-    height: 150px;
+    order: 2;
+    height: 96px;
+    border-radius: 12px;
   }
 
   .cyclist-svg-wrapper {
-    width: 210px;
+    width: 150px;
   }
 
   .ride-feedback {
+    order: 1;
     text-align: left;
-    font-size: 0.82rem;
-    line-height: 1.45;
-    padding: 10px;
-    margin-top: 10px;
+    font-size: 1.06rem;
+    line-height: 1.55;
+    padding: 14px;
+    margin-top: 0;
+    border-left: 0;
+    border-top: 4px solid var(--color-teal);
+    color: var(--text-primary);
   }
 
   .dashboard-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
+  }
+
+  #card-power { order: 1; }
+  #card-cadence { order: 2; }
+  #card-resistance { order: 3; }
+  #card-time { order: 4; }
+  #card-calories { order: 5; }
+  #card-hr { order: 6; }
+
+  #card-hr {
+    grid-column: 1 / -1;
   }
 
   .metric-card {
-    min-height: 112px;
-    padding: 12px;
-    border-radius: 14px;
+    min-height: 108px;
+    padding: 10px;
+    border-radius: 12px;
+    min-width: 0;
   }
 
   .metric-title {
@@ -1605,23 +1742,25 @@ input:checked + .slider:before {
   .metric-footer {
     font-size: 0.68rem;
     line-height: 1.35;
+    overflow-wrap: anywhere;
   }
 
   .metric-value {
-    font-size: 1.75rem;
+    font-size: 1.9rem;
     letter-spacing: 0;
   }
 
   .metric-value-compact {
-    font-size: 1.05rem;
+    font-size: 1.1rem;
   }
 
   .metric-value-container {
     margin: 8px 0 4px;
+    min-width: 0;
   }
 
   .text-timer {
-    font-size: 1.35rem;
+    font-size: 1.32rem;
   }
 
   .btn-adjust {
@@ -1748,15 +1887,38 @@ input:checked + .slider:before {
   }
 
   .controls-panel {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px;
   }
 
   .connection-group {
     grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+
+  .user-switcher-container,
+  .toggle-container {
+    padding: 5px 7px;
+  }
+
+  .select-input,
+  .toggle-label {
+    font-size: 0.76rem;
   }
 
   .compat-label-text {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
+  }
+
+  .compat-toggle-container {
+    min-height: 34px;
+    padding: 6px 7px;
+  }
+
+  .btn-icon-only-btn {
+    min-height: 34px;
+    padding: 7px;
+    font-size: 0.74rem;
   }
 
   .visual-card {
@@ -1764,11 +1926,16 @@ input:checked + .slider:before {
   }
 
   .visualizer-container {
-    height: 128px;
+    height: 86px;
   }
 
   .cyclist-svg-wrapper {
-    width: 185px;
+    width: 138px;
+  }
+
+  .ride-feedback {
+    font-size: 1rem;
+    padding: 12px;
   }
 
   .dashboard-grid {
@@ -1776,15 +1943,23 @@ input:checked + .slider:before {
   }
 
   .metric-card {
-    min-height: 104px;
+    min-height: 102px;
   }
 
   .metric-value {
-    font-size: 1.55rem;
+    font-size: 1.78rem;
   }
 
   .metric-unit {
     font-size: 0.72rem;
+  }
+
+  .metric-value-compact {
+    font-size: 1rem;
+  }
+
+  .text-timer {
+    font-size: 1.18rem;
   }
 
   .virtual-road-bar-container {
@@ -1804,14 +1979,24 @@ input:checked + .slider:before {
   }
 
   .modal-overlay {
-    align-items: flex-end;
-    padding: 10px;
+    align-items: center;
+    padding: calc(env(safe-area-inset-top) + 10px) 10px calc(env(safe-area-inset-bottom) + 10px);
   }
 
   .modal-card {
-    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px);
     border-radius: 18px;
-    padding: 18px;
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .modal-title {
+    font-size: 1.08rem;
+  }
+
+  .modal-back-btn {
+    width: auto;
+    min-height: 34px;
   }
 
   .modal-footer {

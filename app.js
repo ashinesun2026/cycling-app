@@ -575,7 +575,11 @@ function setupEventListeners() {
   });
 
   btnCloseGuide.addEventListener('click', () => {
-    modalGuide.classList.add('hidden');
+    closeModalById('modal-guide');
+  });
+
+  document.querySelectorAll('[data-close-modal]').forEach(btn => {
+    btn.addEventListener('click', () => closeModalById(btn.dataset.closeModal));
   });
 
   // 運動控制
@@ -616,8 +620,7 @@ function setupEventListeners() {
 
   // 取消檔案設定
   btnCancelProfile.addEventListener('click', () => {
-    modalProfile.classList.add('hidden');
-    userSelect.value = db.activeUserId;
+    closeModalById('modal-profile');
   });
 
   // 刪除檔案設定
@@ -628,8 +631,7 @@ function setupEventListeners() {
 
   // 關閉報告視窗
   btnCloseSummary.addEventListener('click', () => {
-    modalSummary.classList.add('hidden');
-    resetWorkout();
+    closeModalById('modal-summary');
   });
 
   btnHealthImportSummary.addEventListener('click', () => {
@@ -637,7 +639,7 @@ function setupEventListeners() {
   });
 
   btnCancelHealthImport.addEventListener('click', () => {
-    modalHealthImport.classList.add('hidden');
+    closeModalById('modal-health-import');
   });
 
   btnParseHealthCode.addEventListener('click', parseHealthImportCodeIntoForm);
@@ -1208,6 +1210,29 @@ function handleSyncCodeSubmit(e) {
   if (typeof pendingSyncCodeSubmit === 'function') {
     pendingSyncCodeSubmit(cleanCode);
   }
+}
+
+function closeModalById(modalId) {
+  if (!modalId) return;
+  if (modalId === 'modal-profile') {
+    modalProfile.classList.add('hidden');
+    userSelect.value = db.activeUserId;
+    return;
+  }
+
+  if (modalId === 'modal-summary') {
+    modalSummary.classList.add('hidden');
+    resetWorkout();
+    return;
+  }
+
+  if (modalId === 'modal-sync-code') {
+    closeSyncCodeModal();
+    return;
+  }
+
+  const modal = document.getElementById(modalId);
+  if (modal) modal.classList.add('hidden');
 }
 
 function exportHistoryToCloud() {

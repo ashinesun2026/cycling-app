@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>飛輪騎行訓練儀表板</title>
-  <link rel="stylesheet" href="style.css?v=2.21">
+  <link rel="stylesheet" href="style.css?v=2.22">
   <!-- 載入 Google Fonts 設計字型 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -161,6 +161,13 @@
           </div>
         </div>
 
+        <!-- 騎行即時回饋 -->
+        <div class="card feedback-card">
+          <div class="ride-feedback" id="ride-feedback">
+            先踩出穩定節奏，系統會依目前踏頻、阻力與時間給你下一步。
+          </div>
+        </div>
+
         <!-- 騎行狀態動畫視覺化 -->
         <div class="card visual-card">
           <div class="visualizer-container">
@@ -239,11 +246,6 @@
               </svg>
             </div>
           </div>
-
-          <!-- 即時引導語 -->
-          <div class="ride-feedback" id="ride-feedback">
-            選擇課表後直接踩踏會自動開始計時，阻力會依階段切換... (v2.14)
-          </div>
         </div>
       </section>
 
@@ -314,7 +316,7 @@
         </div>
 
         <!-- 運動時間 Card -->
-        <div class="card metric-card">
+        <div class="card metric-card" id="card-time">
           <div class="metric-header">
             <span class="metric-title">運動時間</span>
             <span class="metric-icon text-teal">⏱️</span>
@@ -409,7 +411,7 @@
     
     <!-- 快取版本檢測標籤 -->
     <div style="text-align:center; padding:15px; font-size:11px; color:#555; font-family:monospace; border-top:1px dashed rgba(255,255,255,0.05); margin-top:20px;">
-      網頁快取檢測版本：<strong>v2.21 (2026-06-04 04:25)</strong>
+      網頁快取檢測版本：<strong>v2.22 (2026-06-04 04:40)</strong>
     </div>
   </div>
 
@@ -418,6 +420,9 @@
   <!-- Modal A: 個人檔案編輯與新增 -->
   <div id="modal-profile" class="modal-overlay hidden">
     <div class="modal-card">
+      <div class="modal-topbar">
+        <button class="modal-back-btn" type="button" data-close-modal="modal-profile">← 返回</button>
+      </div>
       <h3 class="modal-title" id="profile-modal-title">設定個人檔案</h3>
       <div class="modal-body">
         <form id="form-profile" class="form-layout">
@@ -455,7 +460,7 @@
       <div class="modal-footer">
         <button id="btn-delete-profile" class="btn btn-danger hidden">刪除此檔案</button>
         <div class="modal-footer-actions">
-          <button id="btn-cancel-profile" class="btn btn-secondary">取消</button>
+          <button id="btn-cancel-profile" class="btn btn-secondary">返回</button>
           <button id="btn-save-profile" class="btn btn-primary" type="submit" form="form-profile">儲存</button>
         </div>
       </div>
@@ -465,6 +470,9 @@
   <!-- Modal B: 運動結算報告與智慧建議 -->
   <div id="modal-summary" class="modal-overlay hidden">
     <div class="modal-card modal-summary-card">
+      <div class="modal-topbar">
+        <button class="modal-back-btn" type="button" data-close-modal="modal-summary">← 返回</button>
+      </div>
       <div class="summary-success-badge">🎉 騎行完成！</div>
       <h3 class="modal-title text-center">今日運動結算報告</h3>
       
@@ -516,7 +524,7 @@
       </div>
 
       <div class="modal-footer justify-center">
-        <button id="btn-close-summary" class="btn btn-primary">確認並關閉</button>
+        <button id="btn-close-summary" class="btn btn-primary">返回主畫面</button>
       </div>
     </div>
   </div>
@@ -524,6 +532,9 @@
   <!-- Modal C: 健康資料匯入 -->
   <div id="modal-health-import" class="modal-overlay hidden">
     <div class="modal-card modal-health-card">
+      <div class="modal-topbar">
+        <button class="modal-back-btn" type="button" data-close-modal="modal-health-import">← 返回</button>
+      </div>
       <h3 class="modal-title">訓練後健康資料匯入</h3>
       <div class="modal-body">
         <form id="form-health-import" class="form-layout">
@@ -574,7 +585,7 @@
         <div id="health-import-feedback" class="modal-feedback-msg error hidden"></div>
       </div>
       <div class="modal-footer">
-        <button id="btn-cancel-health-import" class="btn btn-secondary">取消</button>
+        <button id="btn-cancel-health-import" class="btn btn-secondary">返回</button>
         <div class="modal-footer-actions">
           <button id="btn-parse-health-code" class="btn btn-secondary" type="button">解析匯入碼</button>
           <button id="btn-save-health-import" class="btn btn-primary" type="submit" form="form-health-import">套用到訓練</button>
@@ -586,6 +597,9 @@
   <!-- Modal D: 雲端同步碼輸入 -->
   <div id="modal-sync-code" class="modal-overlay hidden">
     <div class="modal-card">
+      <div class="modal-topbar">
+        <button class="modal-back-btn" type="button" data-close-modal="modal-sync-code">← 返回</button>
+      </div>
       <h3 class="modal-title" id="sync-modal-title">輸入雲端同步碼</h3>
       <div class="modal-body">
         <form id="form-sync-code" class="form-layout">
@@ -600,7 +614,7 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button id="btn-cancel-sync-code" class="btn btn-secondary" type="button">取消</button>
+        <button id="btn-cancel-sync-code" class="btn btn-secondary" type="button">返回</button>
         <button id="btn-submit-sync-code" class="btn btn-primary" type="submit" form="form-sync-code">開始下載</button>
       </div>
     </div>
@@ -609,6 +623,9 @@
   <!-- Modal D: 連線說明引導彈窗 (Troubleshooting Guide) -->
   <div id="modal-guide" class="modal-overlay hidden">
     <div class="modal-card modal-guide-card">
+      <div class="modal-topbar">
+        <button class="modal-back-btn" type="button" data-close-modal="modal-guide">← 返回</button>
+      </div>
       <h3 class="modal-title">飛輪連線與健康匯入說明</h3>
       <div class="modal-body scrollable-modal-body">
         
@@ -646,10 +663,10 @@
 
         <div class="guide-section">
           <h4>iPhone 捷徑自動化設定 (推薦)</h4>
-          <p>我們已為您生成 <strong>飛輪健康匯入_自動抓取版_v6.shortcut</strong>，可至下載項目直接安裝。該捷徑會自動讀取 Apple 健康的最新自行車運動數據，並複製匯入網址至剪貼簿，流程如下：</p>
+          <p>請使用 <strong>飛輪健康匯入_自動抓取版_v7_最近12小時.shortcut</strong>。該捷徑會讀取 Apple 健康最近 12 小時自行車資料，並產生匯入網址。</p>
           <ul>
-            <li><strong>一鍵執行</strong>：在 iPhone 上執行「飛輪健康匯入_自動抓取版_v6」。</li>
-            <li><strong>自動讀取</strong>：自動撈取今日最新「室內自行車/自行車」的平均心率、最高心率、卡路里及運動時間。</li>
+            <li><strong>一鍵執行</strong>：在 iPhone 上執行「飛輪健康匯入_自動抓取版_v7_最近12小時」。</li>
+            <li><strong>自動讀取</strong>：自動撈取最近 12 小時「自行車」相關健康資料。</li>
             <li><strong>手動自評</strong>：僅需輸入疲勞感 RPE (1-10) 與備忘筆記。</li>
             <li><strong>複製與啟動</strong>：捷徑會自動將包含數據的網址複製到剪貼簿，並開啟 <strong>BLE Link</strong> App。</li>
             <li><strong>網頁匯入</strong>：在 BLE Link 中點擊「匯入健康資料」，貼上後點擊「解析匯入碼」➡️「套用到訓練」即可完成補完！</li>
@@ -669,12 +686,12 @@
         </div>
       </div>
       <div class="modal-footer justify-center">
-        <button id="btn-close-guide" class="btn btn-primary">我瞭解了</button>
+        <button id="btn-close-guide" class="btn btn-primary">返回主畫面</button>
       </div>
     </div>
   </div>
 
   <!-- 用於載入核心 JS 的程式 -->
-  <script src="app.js?v=2.21-personalized-plan"></script>
+  <script src="app.js?v=2.22-layout-back"></script>
 </body>
 </html>
