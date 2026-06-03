@@ -1,3 +1,43 @@
+// === 全局錯誤捕捉與螢幕顯示 (iOS/手機調試專用) ===
+window.addEventListener('error', (event) => {
+  showOnScreenError(`JS 錯誤: ${event.message}\n檔案: ${event.filename.split('/').pop()}:${event.lineno}`);
+});
+window.addEventListener('unhandledrejection', (event) => {
+  showOnScreenError(`Promise 錯誤: ${event.reason}`);
+});
+
+function showOnScreenError(msg) {
+  console.error(msg);
+  let errDiv = document.getElementById('debug-err-log');
+  if (!errDiv) {
+    errDiv = document.createElement('div');
+    errDiv.id = 'debug-err-log';
+    errDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;right:10px;background:rgba(255,0,0,0.95);color:white;padding:12px;border-radius:8px;font-size:12px;z-index:10000;word-break:break-all;font-family:monospace;max-height:180px;overflow-y:auto;box-shadow:0 0 15px rgba(0,0,0,0.5);border:1px solid #ff5555;line-height:1.4;';
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.innerText = '✕ 關閉';
+    closeBtn.style.cssText = 'float:right;background:white;color:red;border:none;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;font-weight:bold;margin-left:10px;';
+    closeBtn.onclick = () => errDiv.remove();
+    errDiv.appendChild(closeBtn);
+    
+    const title = document.createElement('strong');
+    title.innerText = '⚠️ 程式錯誤偵測 (請拍照回傳)：\n';
+    errDiv.appendChild(title);
+    
+    const content = document.createElement('span');
+    content.id = 'debug-err-content';
+    content.innerText = msg;
+    errDiv.appendChild(content);
+    
+    document.body.appendChild(errDiv);
+  } else {
+    const content = document.getElementById('debug-err-content');
+    if (content) {
+      content.innerText += '\n' + msg;
+    }
+  }
+}
+
 // === 藍牙規格 UUID ===
 const FTMS_SERVICE_UUID = 0x1826;
 const INDOOR_BIKE_DATA_CHAR_UUID = 0x2AD2;
@@ -173,12 +213,22 @@ function safeSetItem(key, val) {
 }
 
 // === 初始化 ===
-window.addEventListener('DOMContentLoaded', () => {
-  detectBluetoothSupport();
-  initUsers();
-  setupEventListeners();
-  updateUI();
-});
+function safeInit() {
+  try {
+    detectBluetoothSupport();
+    initUsers();
+    setupEventListeners();
+    updateUI();
+  } catch (err) {
+    showOnScreenError(`初始化失敗: ${err.message}\n堆疊: ${err.stack}`);
+  }
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', safeInit);
+} else {
+  safeInit();
+}
 
 // 1. 偵測 iOS 與 Web Bluetooth 支援度
 function detectBluetoothSupport() {
@@ -335,7 +385,11 @@ function openProfileModal(isNew = false) {
     profileName.value = user.name;
     profileAge.value = user.age;
     profileWeight.value = user.weight;
-    document.querySelector(`input[name="profile-gender"][value="${user.gender}"]`).checked = true;
+    const genderVal = user.gender || 'male';
+    const genderRadio = document.querySelector(`input[name="profile-gender"][value="${genderVal}"]`);
+    if (genderRadio) {
+      genderRadio.checked = true;
+    }
     
     if (user.id === 'default') {
       btnDeleteProfile.classList.add('hidden');
