@@ -500,7 +500,10 @@ async function connectBike() {
   try {
     updateFeedback('正在搜尋飛輪裝置...');
     
-    const options = {
+    const options = state.useCompatMode ? {
+      acceptAllDevices: true,
+      optionalServices: [FTMS_SERVICE_UUID]
+    } : {
       filters: [{ services: [FTMS_SERVICE_UUID] }],
       optionalServices: [FTMS_SERVICE_UUID]
     };
@@ -603,7 +606,10 @@ async function connectHeartRate() {
   try {
     updateFeedback('正在搜尋藍牙心率設備 (如 Echo 廣播)...');
     
-    const options = {
+    const options = state.useCompatMode ? {
+      acceptAllDevices: true,
+      optionalServices: [HR_SERVICE_UUID]
+    } : {
       filters: [{ services: [HR_SERVICE_UUID] }],
       optionalServices: [HR_SERVICE_UUID]
     };
