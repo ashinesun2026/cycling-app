@@ -333,6 +333,7 @@ const healthNote = document.getElementById('health-note');
 const healthImportCode = document.getElementById('health-import-code');
 const btnCancelHealthImport = document.getElementById('btn-cancel-health-import');
 const btnParseHealthCode = document.getElementById('btn-parse-health-code');
+const healthImportFeedback = document.getElementById('health-import-feedback');
 
 // === 0. 本地 LocalStorage 安全存取包裝 ===
 // iOS 無痕模式或部分 WebView 會封鎖 LocalStorage，拋出 SecurityError 導致 JS 崩潰。這會使按鈕完全無反應。
@@ -1043,7 +1044,20 @@ function parseRange(text) {
   return { min: Number(match[1]), max: Number(match[2]) };
 }
 
+function showHealthImportFeedback(text, type = 'info') {
+  if (!healthImportFeedback) return;
+  healthImportFeedback.innerText = text;
+  healthImportFeedback.className = `modal-feedback-msg ${type}`;
+  healthImportFeedback.classList.remove('hidden');
+}
+
+function hideHealthImportFeedback() {
+  if (!healthImportFeedback) return;
+  healthImportFeedback.classList.add('hidden');
+}
+
 function openHealthImportModal(recordId = null) {
+  hideHealthImportFeedback();
   const target = recordId ? findRecordById(recordId) : getLatestRecordForActiveUser();
   if (!target) {
     updateFeedback('目前沒有可匯入的訓練紀錄。請先完成一次騎行。');
@@ -1063,8 +1077,12 @@ function openHealthImportModal(recordId = null) {
 }
 
 function parseHealthImportCodeIntoForm() {
+  hideHealthImportFeedback();
   const raw = healthImportCode.value.trim();
-  if (!raw) return;
+  if (!raw) {
+    showHealthImportFeedback('⚠️ 請先在下方文字框貼上捷徑匯入碼或完整的網址，再點擊「解析匯入碼」。', 'error');
+    return;
+  }
 
   try {
     let data;
@@ -1078,9 +1096,9 @@ function parseHealthImportCodeIntoForm() {
     }
 
     fillHealthForm(normalizeHealthMetrics(data));
-    updateFeedback('匯入碼已解析，確認數字後按「套用到訓練」。');
+    showHealthImportFeedback('✅ 匯入碼已解析，確認上方數字無誤後，點選「套用到訓練」。', 'success');
   } catch (error) {
-    updateFeedback(`匯入碼解析失敗：${error.message}`);
+    showHealthImportFeedback(`❌ 匯入碼解析失敗：${error.message}`, 'error');
   }
 }
 
@@ -1095,6 +1113,7 @@ function fillHealthForm(metrics) {
 
 function handleSaveHealthImport(e) {
   e.preventDefault();
+  hideHealthImportFeedback();
   const recordId = healthTargetRecordId.value;
   const metrics = normalizeHealthMetrics({
     avgHr: healthAvgHr.value,
@@ -1106,7 +1125,14 @@ function handleSaveHealthImport(e) {
   });
 
   if (!metrics.avgHr && !metrics.activeKcal && !metrics.exerciseMin && !metrics.rpe) {
-    updateFeedback('請至少填入一個健康資料欄位。');
+    showHealthImportFeedback('⚠️ 請至少填入一個健康資料欄位。', 'error');
+    return;
+  }
+
+  const history = getHistoryFromStorage();
+  const targetIndex = history.findIndex(record => record.id === recordId);
+  if (targetIndex < 0) {
+    showHealthImportFeedback('❌ 找不到可更新的騎行紀錄！請確認您是在進行騎行的同一個瀏覽器中開啟此網頁，或是複製下方匯入碼至您的騎行瀏覽器（例如 BLE Link）貼上並解析。', 'error');
     return;
   }
 
@@ -1179,13 +1205,15 @@ function handleInboundHealthImport() {
   const metrics = normalizeHealthMetrics(rawMetrics);
   const latest = getLatestRecordForActiveUser();
 
+  hideHealthImportFeedback();
+
   if (!latest) {
     // 跨瀏覽器/設備防呆：如果在此瀏覽器找不到歷史紀錄，將數據帶入匯入表單並打開 Modal，且填入匯入碼以供複製
     fillHealthForm(metrics);
     healthTargetRecordId.value = '';
-    healthImportCode.value = window.location.search;
+    healthImportCode.value = window.location.href;
     modalHealthImport.classList.remove('hidden');
-    updateFeedback('已偵測到健康數據，但此瀏覽器無騎行紀錄。已填入表單，可複製下方匯入碼至 BLE Link。');
+    showHealthImportFeedback('⚠️ 已偵測到健康數據，但在此瀏覽器找不到您的騎行紀錄！請複製網址並至您進行騎行的瀏覽器（例如 BLE Link）的「匯入健康」中貼上並解析。', 'error');
   } else {
     applyHealthMetricsToRecord(latest.id, metrics, { showSummary: true });
     updateFeedback('健康資料已自動匯入！');

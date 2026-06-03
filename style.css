@@ -1113,6 +1113,39 @@ input:checked + .slider:before {
   margin-left: auto;
 }
 
+/* 彈窗內部的反饋提示訊息 */
+.modal-feedback-msg {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  transition: all 0.3s ease;
+  word-break: break-all;
+}
+
+.modal-feedback-msg.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-red);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.modal-feedback-msg.success {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-green);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.modal-feedback-msg.info {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--color-blue);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.modal-feedback-msg.hidden {
+  display: none !important;
+}
+
 /* === 運動結算報告樣式 === */
 .modal-summary-card {
   max-width: 580px;
