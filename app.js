@@ -1114,6 +1114,9 @@ function exportHistoryToCloud() {
     const backupData = {
       version: 1,
       exportedAt: new Date().toISOString(),
+      summary: {
+        historyCount: history.length
+      },
       history: history,
       db: dbObj
     };
@@ -1134,7 +1137,7 @@ function exportHistoryToCloud() {
 
     // 使用較長效的 TTL (例如 30 天 = 2592000 秒) 讓同步碼可以重複、長期使用
     fetch(`https://kvdb.io/${SYNC_BUCKET}/sync_${syncCode}?ttl=2592000`, {
-      method: 'POST',
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
       },
@@ -1147,11 +1150,11 @@ function exportHistoryToCloud() {
     .then(() => {
       updateSyncCodeBadge();
       if (isFirstTime) {
-        alert(`🎉 首次雲端上傳成功！\n\n已為您產生專屬的 6 位數同步碼：\n\n👉【 ${syncCode} 】\n\n請在另一台設備上點選「從雲端下載」並輸入此同步碼進行首次綁定。\n\n之後兩台設備將會自動記憶此號碼，一鍵即可完成上傳與下載，不需再次輸入！`);
+        alert(`🎉 首次雲端上傳成功！\n\n本次已備份 ${history.length} 筆騎行紀錄。\n\n已為您產生專屬的 6 位數同步碼：\n\n👉【 ${syncCode} 】\n\n請在另一台設備上點選「從雲端下載」並輸入此同步碼進行首次綁定。\n\n之後兩台設備將會自動記憶此號碼，一鍵即可完成上傳與下載，不需再次輸入！`);
       } else {
-        alert(`🎉 雲端備份上傳成功！\n\n（專屬同步碼：${syncCode}，已自動記錄於本設備）`);
+        alert(`🎉 雲端備份上傳成功！\n\n本次已備份 ${history.length} 筆騎行紀錄。\n\n（專屬同步碼：${syncCode}，已自動記錄於本設備）`);
       }
-      updateFeedback(`✅ 雲端備份成功！同步碼：${syncCode}`);
+      updateFeedback(`✅ 雲端備份成功！已備份 ${history.length} 筆，同步碼：${syncCode}`);
     })
     .catch(err => {
       alert(`❌ 雲端上傳失敗：${err.message}`);
@@ -1191,7 +1194,9 @@ function importHistoryFromCloud() {
 function downloadHistoryWithCode(syncCode, isAutoDownload) {
   updateFeedback('正在從雲端下載歷史紀錄...');
 
-  fetch(`https://kvdb.io/${SYNC_BUCKET}/sync_${syncCode}`)
+  fetch(`https://kvdb.io/${SYNC_BUCKET}/sync_${syncCode}?cb=${Date.now()}`, {
+    cache: 'no-store'
+  })
   .then(res => {
     if (res.status === 404) {
       throw new Error(`找不到同步碼【${syncCode}】的雲端資料。請確認號碼是否正確，或者上傳端是否已成功上傳過資料。`);
@@ -1227,16 +1232,31 @@ function downloadHistoryWithCode(syncCode, isAutoDownload) {
     // 儲存使用者資料庫
     safeSetItem('antigravity_cycling_db', JSON.stringify(currentDb));
 
-    // 2. 合併騎行歷史紀錄
+    // 2. 合併騎行歷史紀錄：同 ID 視為同一筆，雲端版本較新時覆蓋本機。
     const currentHistory = getHistoryFromStorage();
     const backupHistory = data.history;
-    let importCount = 0;
+    let addedCount = 0;
+    let updatedCount = 0;
+    let unchangedCount = 0;
     const mergedHistory = [...currentHistory];
     backupHistory.forEach(bh => {
-      if (!mergedHistory.some(h => h.id === bh.id)) {
+      if (!bh || typeof bh !== 'object') return;
+
+      const existingIndex = mergedHistory.findIndex(h => h.id && bh.id && h.id === bh.id);
+      if (existingIndex === -1) {
         mergedHistory.push(bh);
-        importCount++;
+        addedCount++;
+        return;
       }
+
+      const existing = mergedHistory[existingIndex];
+      if (JSON.stringify(existing) === JSON.stringify(bh)) {
+        unchangedCount++;
+        return;
+      }
+
+      mergedHistory[existingIndex] = bh;
+      updatedCount++;
     });
     
     // 依時間排序歷史紀錄 (最新優先)
@@ -1249,13 +1269,16 @@ function downloadHistoryWithCode(syncCode, isAutoDownload) {
 
     // 3. 重新讀取與渲染 UI
     initUsers(); // 會呼叫 loadHistory() 與 updateUI()
-    
+
+    const cloudCount = backupHistory.length;
+    const syncSummary = `雲端讀取 ${cloudCount} 筆，新增 ${addedCount} 筆、更新 ${updatedCount} 筆、已存在 ${unchangedCount} 筆。`;
+
     if (isAutoDownload) {
-      alert(`🎉 雲端自動下載完成！成功合併並新增了 ${importCount} 筆騎行紀錄。\n\n（使用同步碼：${syncCode}）`);
+      alert(`🎉 雲端自動下載完成！\n\n${syncSummary}\n\n（使用同步碼：${syncCode}）`);
     } else {
-      alert(`🎉 首次同步與綁定成功！成功合併並新增了 ${importCount} 筆騎行紀錄。\n\n已自動為您記錄同步碼：${syncCode}，下次下載將直接自動同步，不需再次輸入！`);
+      alert(`🎉 首次同步與綁定成功！\n\n${syncSummary}\n\n已自動為您記錄同步碼：${syncCode}，下次下載將直接自動同步，不需再次輸入！`);
     }
-    updateFeedback(`🎉 成功同步 ${importCount} 筆騎行紀錄！`);
+    updateFeedback(`🎉 同步完成：${syncSummary}`);
   })
   .catch(err => {
     alert(`❌ 下載失敗：${err.message}`);
