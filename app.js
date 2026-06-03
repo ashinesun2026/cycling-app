@@ -335,6 +335,9 @@ const btnCancelHealthImport = document.getElementById('btn-cancel-health-import'
 const btnParseHealthCode = document.getElementById('btn-parse-health-code');
 const healthImportFeedback = document.getElementById('health-import-feedback');
 const btnCopyImportUrl = document.getElementById('btn-copy-import-url');
+const btnExportHistory = document.getElementById('btn-export-history');
+const btnImportHistory = document.getElementById('btn-import-history');
+const inputImportFile = document.getElementById('input-import-file');
 
 // === 0. 本地 LocalStorage 安全存取包裝 ===
 // iOS 無痕模式或部分 WebView 會封鎖 LocalStorage，拋出 SecurityError 導致 JS 崩潰。這會使按鈕完全無反應。
@@ -522,6 +525,11 @@ function setupEventListeners() {
   btnParseHealthCode.addEventListener('click', parseHealthImportCodeIntoForm);
   btnCopyImportUrl.addEventListener('click', handleCopyImportUrl);
   formHealthImport.addEventListener('submit', handleSaveHealthImport);
+
+  // 歷史紀錄匯出與匯入
+  btnExportHistory.addEventListener('click', exportHistoryData);
+  btnImportHistory.addEventListener('click', () => inputImportFile.click());
+  inputImportFile.addEventListener('change', importHistoryData);
 }
 
 // === 個人檔案編輯 Modal 控制 ===
@@ -1005,6 +1013,107 @@ function getLatestRecordForActiveUser() {
 
 function findRecordById(recordId) {
   return getHistoryFromStorage().find(record => record.id === recordId) || null;
+}
+
+function exportHistoryData() {
+  try {
+    const history = getHistoryFromStorage();
+    const localDb = safeGetItem('antigravity_cycling_db');
+    let dbObj = {};
+    if (localDb) {
+      try { dbObj = JSON.parse(localDb); } catch(e) {}
+    }
+
+    const backupData = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      history: history,
+      db: dbObj
+    };
+
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `antigravity_cycling_backup_${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    updateFeedback('✅ 歷史紀錄備份匯出成功！');
+  } catch (err) {
+    updateFeedback(`❌ 匯出失敗：${err.message}`);
+  }
+}
+
+function importHistoryData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const data = JSON.parse(evt.target.result);
+      if (!data.history || !Array.isArray(data.history)) {
+        throw new Error('無效的備份檔案格式。');
+      }
+
+      // 1. 合併使用者資料庫 (db)
+      const localDb = safeGetItem('antigravity_cycling_db');
+      let currentDb = { users: [DEFAULT_USER], activeUserId: 'default' };
+      if (localDb) {
+        try { currentDb = JSON.parse(localDb); } catch(e) {}
+      }
+
+      const backupDb = data.db || {};
+      const backupUsers = backupDb.users || [];
+      const currentUsers = currentDb.users || [];
+
+      // 合併使用者清單，ID 不重複
+      const mergedUsers = [...currentUsers];
+      backupUsers.forEach(bu => {
+        if (!mergedUsers.some(u => u.id === bu.id)) {
+          mergedUsers.push(bu);
+        }
+      });
+      currentDb.users = mergedUsers;
+      
+      // 儲存使用者資料庫
+      safeSetItem('antigravity_cycling_db', JSON.stringify(currentDb));
+
+      // 2. 合併騎行歷史紀錄
+      const currentHistory = getHistoryFromStorage();
+      const backupHistory = data.history;
+      let importCount = 0;
+      const mergedHistory = [...currentHistory];
+      backupHistory.forEach(bh => {
+        if (!mergedHistory.some(h => h.id === bh.id)) {
+          mergedHistory.push(bh);
+          importCount++;
+        }
+      });
+      
+      // 依時間排序歷史紀錄 (最新優先)
+      mergedHistory.sort((a, b) => new Date(b.startTime || 0) - new Date(a.startTime || 0));
+      
+      safeSetItem('antigravity_cycling_history', JSON.stringify(mergedHistory));
+
+      // 3. 重新讀取與渲染 UI
+      initUsers(); // 會呼叫 loadHistory() 與 updateUI()
+      
+      // 清空選取檔案
+      inputImportFile.value = '';
+      
+      alert(`🎉 匯入完成！成功合併並新增了 ${importCount} 筆騎行紀錄。`);
+      updateFeedback(`🎉 成功匯入 ${importCount} 筆騎行紀錄！`);
+    } catch (err) {
+      alert(`❌ 匯入失敗：${err.message}`);
+      updateFeedback(`❌ 匯入失敗：${err.message}`);
+      inputImportFile.value = '';
+    }
+  };
+  reader.readAsText(file);
 }
 
 function getDisplayCalories(record) {

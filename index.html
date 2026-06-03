@@ -383,7 +383,14 @@
 
       <!-- 歷史紀錄列表 -->
       <div class="card history-list-card">
-        <h2 class="card-title">歷史騎行紀錄</h2>
+        <div class="card-header-with-actions">
+          <h2 class="card-title">歷史騎行紀錄</h2>
+          <div class="history-actions">
+            <button id="btn-export-history" class="btn-link" type="button">📤 匯出備份</button>
+            <button id="btn-import-history" class="btn-link" type="button">📥 匯入資料</button>
+            <input type="file" id="input-import-file" accept=".json" style="display: none;">
+          </div>
+        </div>
         <div class="history-list-container">
           <ul id="history-list" class="history-list">
             <li class="no-records">尚未有騎行紀錄，連線飛輪後開始踩踏，或點「手動開始」建立第一次訓練。</li>

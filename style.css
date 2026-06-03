@@ -878,6 +878,46 @@ input:checked + .slider:before {
   font-weight: 600;
 }
 
+.card-header-with-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card-header-with-actions .card-title {
+  margin-bottom: 0 !important;
+}
+
+.history-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-link {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--color-cyan);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: inherit;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-link:hover {
+  background: rgba(102, 252, 241, 0.12);
+  border-color: rgba(102, 252, 241, 0.3);
+  color: #fff;
+}
+
 .history-list-card {
   display: flex;
   flex-direction: column;
