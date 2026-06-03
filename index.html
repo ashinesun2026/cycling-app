@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>飛輪騎行訓練儀表板</title>
-  <link rel="stylesheet" href="style.css?v=2.3">
+  <link rel="stylesheet" href="style.css?v=2.21">
   <!-- 載入 Google Fonts 設計字型 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -97,6 +97,14 @@
                 <h3>有氧耐力</h3>
               </div>
               <p>穩定輸出 / 30 分鐘。建立基礎心肺與長時間節奏。</p>
+            </button>
+
+            <button class="workout-btn hidden" id="mode-personalized" data-mode="personalized">
+              <div class="mode-header">
+                <span class="mode-badge badge-personal">建議</span>
+                <h3>下次訓練</h3>
+              </div>
+              <p id="personalized-mode-desc">健康資料匯入後自動產生。</p>
             </button>
 
             <button class="workout-btn" id="mode-tempo" data-mode="tempo">
@@ -401,7 +409,7 @@
     
     <!-- 快取版本檢測標籤 -->
     <div style="text-align:center; padding:15px; font-size:11px; color:#555; font-family:monospace; border-top:1px dashed rgba(255,255,255,0.05); margin-top:20px;">
-      網頁快取檢測版本：<strong>v2.20 (2026-06-04 04:15)</strong>
+      網頁快取檢測版本：<strong>v2.21 (2026-06-04 04:25)</strong>
     </div>
   </div>
 
@@ -667,6 +675,6 @@
   </div>
 
   <!-- 用於載入核心 JS 的程式 -->
-  <script src="app.js?v=2.20-health-parse"></script>
+  <script src="app.js?v=2.21-personalized-plan"></script>
 </body>
 </html>

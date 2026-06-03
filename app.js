@@ -133,6 +133,16 @@ const TRAINING_PLANS = {
     focus: '基礎心肺、長時間穩定輸出',
     coach: '有氧耐力：從暖身進入巡航，中段穩住輸出，最後兩分鐘緩和。'
   },
+  personalized: {
+    label: '建議',
+    title: '下次訓練',
+    targetPower: '依個人化階段',
+    targetCadence: '依個人化階段',
+    resistance: null,
+    intensity: '個人化',
+    focus: '依上次健康資料調整',
+    coach: '下次訓練：健康資料匯入後自動產生，會依照疲勞、心率、時間與踩踏狀態調整。'
+  },
   tempo: {
     label: '節奏',
     title: '燃脂節奏',
@@ -251,6 +261,8 @@ const demoToggle = document.getElementById('demo-mode-toggle');
 
 const btnPlayPause = document.getElementById('btn-play-pause');
 const btnReset = document.getElementById('btn-reset');
+const personalizedModeBtn = document.getElementById('mode-personalized');
+const personalizedModeDesc = document.getElementById('personalized-mode-desc');
 
 const valPower = document.getElementById('val-power');
 const valCadence = document.getElementById('val-cadence');
@@ -367,11 +379,109 @@ function safeSetItem(key, val) {
   }
 }
 
+function getPersonalizedTrainingPlan() {
+  const raw = safeGetItem('antigravity_next_training_plan');
+  if (!raw) return null;
+  try {
+    const plan = JSON.parse(raw);
+    if (!plan || !Array.isArray(plan.phases) || !plan.phases.length) return null;
+    return plan;
+  } catch (e) {
+    console.error('無法讀取個人化訓練模式:', e);
+    return null;
+  }
+}
+
+function getTrainingPlan(mode = state.workoutMode) {
+  if (mode === 'personalized') {
+    const personalized = getPersonalizedTrainingPlan();
+    if (personalized) {
+      return {
+        ...TRAINING_PLANS.personalized,
+        title: personalized.title,
+        targetPower: '依階段',
+        targetCadence: personalized.cadence,
+        focus: personalized.focus,
+        coach: personalized.reason
+      };
+    }
+  }
+  return TRAINING_PLANS[mode] || TRAINING_PLANS.free;
+}
+
+function buildPersonalizedPhases(sourceMode = 'endurance') {
+  const templates = {
+    recovery: [
+      { name: '暖身喚醒', duration: 180, resistance: 3, targetCadence: '68-76', targetPower: '60-90W', info: '慢慢把腿轉開，保留一點阻力張力。' },
+      { name: '恢復巡航', duration: 420, resistance: 4, targetCadence: '68-78', targetPower: '70-105W', info: '呼吸要能完整講話，不追瓦數。' },
+      { name: '穩踩整理', duration: 360, resistance: 5, targetCadence: '68-78', targetPower: '85-120W', info: '短暫加一點張力，檢查踩踏是否穩定。' },
+      { name: '最後緩和', duration: 120, resistance: 2, targetCadence: '64-74', targetPower: '50-80W', info: '最後兩分鐘放鬆收操。' }
+    ],
+    cadence: [
+      { name: '暖身張力', duration: 180, resistance: 5, targetCadence: '68-78', targetPower: '85-115W', info: '不用高轉，先建立穩定踩壓。' },
+      { name: '穩踩主段', duration: 300, resistance: 7, targetCadence: '68-78', targetPower: '110-145W', info: '每一下踩踏都要穩，不要左右晃。' },
+      { name: '肌耐力高點', duration: 300, resistance: 9, targetCadence: '66-76', targetPower: '135-170W', info: '中高阻力，但不要硬頂到膝蓋不舒服。' },
+      { name: '節奏整理', duration: 180, resistance: 7, targetCadence: '68-78', targetPower: '110-145W', info: '回到穩定節奏，讓呼吸可控。' },
+      { name: '最後緩和', duration: 120, resistance: 3, targetCadence: '64-74', targetPower: '60-90W', info: '最後兩分鐘緩和。' }
+    ],
+    endurance: [
+      { name: '暖身', duration: 240, resistance: 4, targetCadence: '68-78', targetPower: '80-110W', info: '從可控阻力開始，不急著拉高。' },
+      { name: '基礎巡航', duration: 420, resistance: 6, targetCadence: '70-80', targetPower: '105-140W', info: '穩住呼吸和踩踏，不追高轉。' },
+      { name: '穩定主段', duration: 480, resistance: 7, targetCadence: '70-80', targetPower: '120-155W', info: '主段重點是穩，不是爆衝。' },
+      { name: '耐力加壓', duration: 240, resistance: 8, targetCadence: '68-78', targetPower: '130-165W', info: '最後主段稍微加壓，姿勢不能散。' },
+      { name: '最後緩和', duration: 120, resistance: 3, targetCadence: '64-74', targetPower: '60-90W', info: '最後兩分鐘降壓。' }
+    ],
+    tempo: [
+      { name: '暖身', duration: 240, resistance: 5, targetCadence: '68-78', targetPower: '90-120W', info: '先建立張力。' },
+      { name: '節奏建立', duration: 360, resistance: 8, targetCadence: '68-78', targetPower: '120-155W', info: '進入可控辛苦區。' },
+      { name: '高峰巡航', duration: 420, resistance: 10, targetCadence: '66-76', targetPower: '145-185W', info: '呼吸變深，但踩踏要穩。' },
+      { name: '強度收束', duration: 120, resistance: 8, targetCadence: '68-78', targetPower: '120-155W', info: '不要突然放掉，先收住節奏。' },
+      { name: '最後緩和', duration: 120, resistance: 3, targetCadence: '64-74', targetPower: '60-90W', info: '最後兩分鐘緩和。' }
+    ]
+  };
+  return templates[sourceMode] || templates.endurance;
+}
+
+function savePersonalizedTrainingPlan(prescription, record) {
+  const phases = prescription.phases || buildPersonalizedPhases(prescription.mode);
+  const totalSeconds = phases.reduce((sum, phase) => sum + phase.duration, 0);
+  const plan = {
+    id: `next_${Date.now()}`,
+    sourceRecordId: record.id,
+    createdAt: new Date().toISOString(),
+    title: prescription.title,
+    mode: 'personalized',
+    sourceMode: prescription.mode,
+    duration: prescription.duration,
+    cadence: prescription.cadence,
+    resistance: prescription.resistance,
+    focus: prescription.focus,
+    reason: prescription.reason,
+    totalMinutes: Math.round(totalSeconds / 60),
+    phases
+  };
+  safeSetItem('antigravity_next_training_plan', JSON.stringify(plan));
+  updatePersonalizedModeCard();
+  return plan;
+}
+
+function updatePersonalizedModeCard() {
+  if (!personalizedModeBtn || !personalizedModeDesc) return;
+  const plan = getPersonalizedTrainingPlan();
+  if (!plan) {
+    personalizedModeBtn.classList.add('hidden');
+    return;
+  }
+  personalizedModeBtn.classList.remove('hidden');
+  personalizedModeDesc.innerText = `${plan.title} / ${plan.totalMinutes || '?'} 分鐘。${plan.focus}`;
+}
+
 // === 初始化 ===
 function safeInit() {
   try {
     detectBluetoothSupport();
     initUsers();
+    updatePersonalizedModeCard();
     updateSyncCodeBadge();
     setupEventListeners();
     updateUI();
@@ -633,7 +743,7 @@ function handleDeleteProfile() {
 // === 運動模式設定 ===
 function setWorkoutMode(mode) {
   state.workoutMode = mode;
-  const plan = TRAINING_PLANS[mode] || TRAINING_PLANS.free;
+  const plan = getTrainingPlan(mode);
 
   state.modeStartedElapsed = state.isPlaying ? state.elapsedTime : 0;
   state.intervalTimeElapsed = 0;
@@ -964,7 +1074,7 @@ function saveAndShowSummary() {
 
   const startDate = state.workoutStartedAt || new Date(Date.now() - state.elapsedTime * 1000).toISOString();
   const endDate = new Date().toISOString();
-  const plan = TRAINING_PLANS[state.workoutMode] || TRAINING_PLANS.free;
+  const plan = getTrainingPlan(state.workoutMode);
   const stabilityScore = calculateStabilityScore(state.powerSamples, state.cadenceSamples);
   const intensityScore = calculateIntensityScore(avgPower, user.weight, state.workoutMode);
   const completionScore = calculateCompletionScore(state.elapsedTime, state.workoutMode);
@@ -1508,13 +1618,16 @@ function applyHealthMetricsToRecord(recordId, metrics, options = {}) {
 
   history[targetIndex] = merged;
   safeSetItem('antigravity_cycling_history', JSON.stringify(history));
-  renderSummary(merged, getActiveUser());
+  const user = getActiveUser();
+  const nextPrescription = getNextTrainingPrescription(merged, user, merged.healthMetrics || {});
+  const nextPlan = savePersonalizedTrainingPlan(nextPrescription, merged);
+  renderSummary(merged, user);
   if (options.showSummary) {
     modalSummary.classList.remove('hidden');
   }
   loadHistory();
   updateUI();
-  updateFeedback('健康資料已匯入，訓練回饋已更新。');
+  updateFeedback(`健康資料已匯入，已產生下次訓練模式：${nextPlan.title}。`);
 }
 
 function handleInboundHealthImport() {
@@ -1571,7 +1684,89 @@ function formatHealthSummary(metrics) {
   return pieces.join(' | ') || '已匯入';
 }
 
-function getNextWorkoutRecommendation(record, health = {}) {
+function getNextTrainingPrescription(record, user, health = {}) {
+  const estimatedMaxHr = 220 - (user?.age || 30);
+  const avgHrPct = health.avgHr ? Math.round((health.avgHr / estimatedMaxHr) * 100) : null;
+  const maxHrPct = health.maxHr ? Math.round((health.maxHr / estimatedMaxHr) * 100) : null;
+  const healthMinutes = health.exerciseMin || 0;
+
+  if ((health.rpe || 0) >= 8 || (maxHrPct || 0) >= 90) {
+    return {
+      mode: 'recovery',
+      title: '恢復騎',
+      duration: '15-20 分鐘',
+      cadence: '68-78 RPM',
+      resistance: '2 → 4 → 2',
+      focus: '恢復腿部、降低心肺壓力',
+      reason: '這次疲勞或心率高峰偏高，下次先恢復，不要連續堆高強度。'
+    };
+  }
+
+  if (healthMinutes >= 40 && (health.rpe || 0) >= 7) {
+    return {
+      mode: 'recovery',
+      title: '恢復騎',
+      duration: '18-22 分鐘',
+      cadence: '68-78 RPM',
+      resistance: '3 → 5 → 2',
+      focus: '保留踩踏張力，但不追瓦數',
+      reason: `健康資料顯示這次已騎 ${healthMinutes} 分鐘，RPE ${health.rpe}/10，下一次先做恢復型課表，讓腿和心肺降壓。`
+    };
+  }
+
+  if ((record.avgCadence || 0) < 68 && (health.rpe || 0) <= 7) {
+    return {
+      mode: 'cadence',
+      title: '穩踩肌耐力',
+      duration: '18 分鐘',
+      cadence: '68-78 RPM',
+      resistance: '5 → 7 → 9 → 7 → 3',
+      focus: '中高阻力穩定推踩，不做高轉速空踩',
+      reason: `本次平均踏頻 ${record.avgCadence || 0} RPM 偏低，下次用穩踩肌耐力把踏頻拉到 68-78 RPM，但仍保留你偏好的阻力張力。`
+    };
+  }
+
+  if ((avgHrPct || 0) >= 70 && (avgHrPct || 0) <= 82 && (health.rpe || 0) <= 7) {
+    return {
+      mode: 'endurance',
+      title: '有氧耐力',
+      duration: '25-30 分鐘',
+      cadence: '70-82 RPM',
+      resistance: '4 → 6 → 7 → 8 → 3',
+      focus: '穩定心肺與長時間輸出',
+      reason: `平均心率約最大心率 ${avgHrPct}%，強度可控，適合用有氧耐力累積穩定度。`
+    };
+  }
+
+  if ((record.coachScore || 0) >= 75 && (health.rpe || 0) <= 6) {
+    return {
+      mode: 'tempo',
+      title: '燃脂節奏',
+      duration: '20-22 分鐘',
+      cadence: '70-80 RPM',
+      resistance: '5 → 8 → 10 → 8 → 3',
+      focus: '可控辛苦、穩定巡航',
+      reason: '本次完成品質不錯且疲勞不高，下一次可提高到節奏巡航。'
+    };
+  }
+
+  return {
+    mode: 'endurance',
+    title: '有氧耐力',
+    duration: '20-25 分鐘',
+    cadence: '68-80 RPM',
+    resistance: '4 → 6 → 7 → 3',
+    focus: '穩定輸出、避免爆衝',
+    reason: '目前最適合先建立穩定基礎，再逐步進到節奏或爬坡。'
+  };
+}
+
+function getNextWorkoutRecommendation(record, user, health = {}) {
+  const prescription = getNextTrainingPrescription(record, user, health);
+  return `已產生左側「建議｜下次訓練」模式：${prescription.title}。${prescription.reason} 目標 ${prescription.duration}，阻力 ${prescription.resistance}，踏頻 ${prescription.cadence}，重點：${prescription.focus}。`;
+}
+
+function getLegacyNextWorkoutRecommendation(record, health = {}) {
   if (health.rpe >= 8) {
     return '下一次安排「恢復騎」15-20 分鐘，阻力維持輕，目標是讓腿恢復，不追求瓦數。';
   }
@@ -1607,6 +1802,46 @@ function generateSportsAdvice(record, user) {
   analysisReportContent.innerHTML = '';
   const advices = [];
 
+  const health = record.healthMetrics || {};
+  if (record.healthImported && hasUsableHealthMetrics(health)) {
+    const estimatedMaxHr = 220 - user.age;
+    const avgHrPct = health.avgHr ? Math.round((health.avgHr / estimatedMaxHr) * 100) : null;
+    const maxHrPct = health.maxHr ? Math.round((health.maxHr / estimatedMaxHr) * 100) : null;
+    const rideMinutes = Math.max(1, Math.round((record.duration || 0) / 60));
+    const healthMinutes = health.exerciseMin || null;
+    const kcalPerMin = health.activeKcal && healthMinutes ? (health.activeKcal / healthMinutes).toFixed(1) : null;
+
+    const parts = [];
+    if (healthMinutes) parts.push(`健康紀錄 ${healthMinutes} 分鐘`);
+    if (health.activeKcal) parts.push(`${health.activeKcal} kcal`);
+    if (health.avgHr) parts.push(`平均心率 ${health.avgHr} BPM${avgHrPct ? `，約最大心率 ${avgHrPct}%` : ''}`);
+    if (health.maxHr) parts.push(`最高 ${health.maxHr} BPM${maxHrPct ? `，約最大心率 ${maxHrPct}%` : ''}`);
+    if (health.rpe) parts.push(`RPE ${health.rpe}/10`);
+
+    let takeaway = '這次健康資料已套用到本次騎行，以下分析會用健康資料評估強度與恢復需求。';
+    if (avgHrPct && avgHrPct >= 82) {
+      takeaway = '平均心率偏高，這次比較接近節奏或間歇強度；下次不建議直接接高強度。';
+    } else if (avgHrPct && avgHrPct >= 70) {
+      takeaway = '平均心率落在有氧到節奏交界，這次有訓練效果，不只是輕鬆踩。';
+    } else if (avgHrPct) {
+      takeaway = '平均心率偏溫和，這次更像耐力累積或恢復騎。';
+    }
+
+    advices.push({
+      title: '本次健康資料回饋',
+      type: (avgHrPct && avgHrPct >= 82) || (health.rpe && health.rpe >= 8) ? 'warning' : 'success',
+      text: `${parts.join('，')}。${kcalPerMin ? `平均消耗約 ${kcalPerMin} kcal/分鐘。` : ''}${takeaway}`
+    });
+
+    if (healthMinutes && Math.abs(healthMinutes - rideMinutes) >= 5) {
+      advices.push({
+        title: '時間來源不一致',
+        type: 'warning',
+        text: `飛輪本機紀錄約 ${rideMinutes} 分鐘，但健康資料是 ${healthMinutes} 分鐘。這代表 Apple 健康可能記到較完整的一整段自行車訓練，或本網頁只保存了其中一段。熱量與心率評估會以健康資料為主，踏頻與功率仍以飛輪紀錄為主。`
+      });
+    }
+  }
+
   if (record.avgCadence > 0) {
     if (record.avgCadence < 65) {
       advices.push({
@@ -1635,7 +1870,6 @@ function generateSportsAdvice(record, user) {
     });
   }
 
-  const health = record.healthMetrics || {};
   if (record.healthImported && (health.avgHr || health.maxHr || health.rpe || health.activeKcal)) {
     const maxHr = 220 - user.age;
     const aerobicLower = Math.round(maxHr * 0.60);
@@ -1700,7 +1934,7 @@ function generateSportsAdvice(record, user) {
   advices.push({
     title: '下次訓練建議',
     type: 'success',
-    text: getNextWorkoutRecommendation(record, health)
+    text: getNextWorkoutRecommendation(record, user, health)
   });
 
   advices.forEach(adv => {
@@ -1729,7 +1963,7 @@ function loadHistory() {
         month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
       });
 
-      const modeText = (TRAINING_PLANS[record.mode] || {}).label || '未知';
+      const modeText = (getTrainingPlan(record.mode) || {}).label || '未知';
       const modeClass = getModeBadgeClass(record.mode);
       const healthTag = record.healthImported ? ' | 健康已匯入' : '';
 
@@ -1767,6 +2001,7 @@ function getModeBadgeClass(mode) {
   if (mode === 'tempo') return 'badge-tempo';
   if (mode === 'cadence') return 'badge-spin';
   if (mode === 'climb') return 'badge-climb';
+  if (mode === 'personalized') return 'badge-personal';
   if (mode === 'interval' || mode === 'pyramid') return 'badge-hard';
   return 'badge-free';
 }
@@ -1802,6 +2037,9 @@ function startIntervalWorkout() {
 }
 
 function getActivePhases(mode = state.workoutMode) {
+  if (mode === 'personalized') {
+    return getPersonalizedTrainingPlan()?.phases || [];
+  }
   return PHASE_PLANS[mode] || [];
 }
 
@@ -1846,7 +2084,7 @@ function getCurrentPhaseContext(mode = state.workoutMode, elapsed = getModeElaps
 
 function updateTrainingPhase(options = {}) {
   const context = getCurrentPhaseContext();
-  const plan = TRAINING_PLANS[state.workoutMode] || TRAINING_PLANS.free;
+  const plan = getTrainingPlan(state.workoutMode);
 
   if (!context) {
     intervalPanel.classList.add('hidden');
@@ -2076,7 +2314,7 @@ function updateUI() {
 }
 
 function getLiveCoachingText() {
-  const plan = TRAINING_PLANS[state.workoutMode] || TRAINING_PLANS.free;
+  const plan = getTrainingPlan(state.workoutMode);
   const context = getCurrentPhaseContext();
   const phase = context?.phase;
   const powerRange = parseRange(phase?.targetPower || plan.targetPower);

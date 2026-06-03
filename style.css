@@ -15,6 +15,7 @@
   --color-yellow: #ffb400;
   --color-orange: #f97316;
   --color-red: #ef4444;
+  --color-purple: #8b5cf6;
 
   /* 動態控制變數 (由 JS 寫入控制) */
   --wheel-speed: 0s;  /* 輪子轉速 (秒數，0s 代表不轉) */
@@ -449,11 +450,16 @@ input:checked + .slider:before {
 .badge-tempo { background-color: var(--color-yellow); color: var(--bg-main); }
 .badge-spin { background-color: var(--color-cyan); color: var(--bg-main); }
 .badge-climb { background-color: var(--color-orange); color: var(--text-primary); }
+.badge-personal { background-color: var(--color-purple); color: var(--text-primary); }
 
 .workout-btn p {
   font-size: 0.8rem;
   color: var(--text-secondary);
   line-height: 1.4;
+}
+
+.workout-btn.hidden {
+  display: none;
 }
 
 /* 間歇計時面板 */
