@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>飛輪騎行訓練儀表板</title>
-  <link rel="stylesheet" href="style.css?v=2.2">
+  <link rel="stylesheet" href="style.css?v=2.3">
   <!-- 載入 Google Fonts 設計字型 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -234,7 +234,7 @@
 
           <!-- 即時引導語 -->
           <div class="ride-feedback" id="ride-feedback">
-            選擇課表後直接踩踏會自動開始計時，阻力會依階段切換... (v2.13)
+            選擇課表後直接踩踏會自動開始計時，阻力會依階段切換... (v2.14)
           </div>
         </div>
       </section>
@@ -394,7 +394,7 @@
     
     <!-- 快取版本檢測標籤 -->
     <div style="text-align:center; padding:15px; font-size:11px; color:#555; font-family:monospace; border-top:1px dashed rgba(255,255,255,0.05); margin-top:20px;">
-      網頁快取檢測版本：<strong>v2.13 (2026-06-03 23:20)</strong>
+      網頁快取檢測版本：<strong>v2.14 (2026-06-03 23:55)</strong>
     </div>
   </div>
 
@@ -516,7 +516,7 @@
 
           <div class="import-mode-box">
             <strong>最快方式</strong>
-            <p>從 Fitness / 健康 App 看本次訓練摘要，填 4 個數字。之後可用 iPhone 捷徑自動開啟帶參數網址。</p>
+            <p>手機騎行：捷徑開網址後會自動匯入。平板騎行：把手機產生的整段網址貼到下面匯入碼，或 AirDrop 到平板開啟。</p>
           </div>
 
           <div class="form-row">
@@ -613,6 +613,18 @@
             <li>依序加入「要求輸入」：平均心率、最高心率、主動熱量、運動分鐘、RPE。</li>
             <li>最後用「打開 URL」開啟本網頁匯入網址。</li>
           </ul>
+        </div>
+
+        <hr class="guide-divider">
+
+        <div class="guide-section">
+          <h4>平板騎行時怎麼匯入？</h4>
+          <p>目前資料存在當下瀏覽器。平板騎行的紀錄在平板，手機跑捷徑只會更新手機，不會更新平板。</p>
+          <ol>
+            <li>推薦：手機捷徑產生匯入網址後，用 AirDrop / 通用剪貼簿 / 訊息傳到平板。</li>
+            <li>在平板打開該網址，或在平板點「匯入健康」後貼上整段網址，再按「解析匯入碼」。</li>
+            <li>若要真正同帳號同步，需要之後加雲端資料庫，例如 Firebase / Supabase；現在版本沒有雲端同步。</li>
+          </ol>
         </div>
       </div>
       <div class="modal-footer justify-center">
