@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="0; url=../?refresh=V1-2.18">
   <title>Cycling App V1</title>
   <script>
-    window.location.replace('../?refresh=V1-2.18');
+    const params = new URLSearchParams(window.location.search);
+    params.set('refresh', 'V1-2.19');
+    window.location.replace(`../?${params.toString()}`);
   </script>
 </head>
 <body>
-  <a href="../?refresh=V1-2.18">Open Cycling App V1</a>
+  <a href="../?refresh=V1-2.19">Open Cycling App V1</a>
 </body>
 </html>
