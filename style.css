@@ -894,6 +894,27 @@ input:checked + .slider:before {
 .history-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.sync-code-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.sync-code-badge:hover {
+  background: rgba(102, 252, 241, 0.1);
+  color: var(--color-cyan);
+  border-color: rgba(102, 252, 241, 0.4);
 }
 
 .btn-link {

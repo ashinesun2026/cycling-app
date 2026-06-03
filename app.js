@@ -337,6 +337,7 @@ const healthImportFeedback = document.getElementById('health-import-feedback');
 const btnCopyImportUrl = document.getElementById('btn-copy-import-url');
 const btnExportHistory = document.getElementById('btn-export-history');
 const btnImportHistory = document.getElementById('btn-import-history');
+const syncCodeDisplay = document.getElementById('sync-code-display');
 
 // === 0. 本地 LocalStorage 安全存取包裝 ===
 // iOS 無痕模式或部分 WebView 會封鎖 LocalStorage，拋出 SecurityError 導致 JS 崩潰。這會使按鈕完全無反應。
@@ -364,6 +365,7 @@ function safeInit() {
   try {
     detectBluetoothSupport();
     initUsers();
+    updateSyncCodeBadge();
     setupEventListeners();
     updateUI();
     handleInboundHealthImport();
@@ -528,6 +530,9 @@ function setupEventListeners() {
   // 歷史紀錄雲端備份與還原
   btnExportHistory.addEventListener('click', exportHistoryToCloud);
   btnImportHistory.addEventListener('click', importHistoryFromCloud);
+  if (syncCodeDisplay) {
+    syncCodeDisplay.addEventListener('click', handleSyncCodeBadgeClick);
+  }
 }
 
 // === 個人檔案編輯 Modal 控制 ===
@@ -1015,6 +1020,43 @@ function findRecordById(recordId) {
 
 const SYNC_BUCKET = 'CxX5fJSkkpTqeMZD6jMGcK';
 
+function updateSyncCodeBadge() {
+  if (!syncCodeDisplay) return;
+  const syncCode = safeGetItem('antigravity_sync_code');
+  if (syncCode) {
+    const cleanCode = syncCode.trim();
+    if (cleanCode.length === 6 && !isNaN(Number(cleanCode))) {
+      syncCodeDisplay.innerText = `🔑 同步碼: ${cleanCode}`;
+      syncCodeDisplay.style.display = 'inline-flex';
+      return;
+    }
+  }
+  syncCodeDisplay.style.display = 'none';
+}
+
+function handleSyncCodeBadgeClick() {
+  const syncCode = safeGetItem('antigravity_sync_code');
+  if (!syncCode) return;
+  
+  const newCode = prompt(
+    `您的專屬同步碼為【${syncCode}】。\n\n如需與另一台設備綁定，請在另一台設備上點選「從雲端下載」並輸入此號碼。\n\n如果需要「修改」或「重新綁定」其他同步碼，請在下方輸入新的 6 位數同步碼；若不需要修改，請點選「取消」：`,
+    syncCode
+  );
+  
+  if (newCode === null) return; // 使用者點選取消
+  
+  const cleanCode = newCode.trim();
+  if (cleanCode.length !== 6 || isNaN(Number(cleanCode))) {
+    alert('❌ 同步碼格式錯誤，必須為 6 位數字！');
+    return;
+  }
+  
+  safeSetItem('antigravity_sync_code', cleanCode);
+  updateSyncCodeBadge();
+  updateFeedback(`✅ 同步碼已修改為：${cleanCode}`);
+  alert(`🎉 同步碼已成功修改為【${cleanCode}】！`);
+}
+
 function exportHistoryToCloud() {
   try {
     const history = getHistoryFromStorage();
@@ -1031,12 +1073,22 @@ function exportHistoryToCloud() {
       db: dbObj
     };
 
-    // 產生隨機的 6 位數同步碼
-    const syncCode = String(Math.floor(100000 + Math.random() * 900000));
-    
+    // 檢查是否有儲存的同步碼，若無則生成一個
+    let syncCode = safeGetItem('antigravity_sync_code');
+    let isFirstTime = false;
+    if (syncCode) {
+      syncCode = syncCode.trim();
+    }
+    if (!syncCode || syncCode.length !== 6 || isNaN(Number(syncCode))) {
+      syncCode = String(Math.floor(100000 + Math.random() * 900000));
+      safeSetItem('antigravity_sync_code', syncCode);
+      isFirstTime = true;
+    }
+
     updateFeedback('正在上傳備份至雲端...');
 
-    fetch(`https://kvdb.io/${SYNC_BUCKET}/sync_${syncCode}?ttl=600`, {
+    // 使用較長效的 TTL (例如 30 天 = 2592000 秒) 讓同步碼可以重複、長期使用
+    fetch(`https://kvdb.io/${SYNC_BUCKET}/sync_${syncCode}?ttl=2592000`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -1048,7 +1100,12 @@ function exportHistoryToCloud() {
       return res.text();
     })
     .then(() => {
-      alert(`🎉 雲端上傳成功！\n\n請在另一台設備點選「從雲端下載」並輸入此 6 位數同步碼：\n\n👉【 ${syncCode} 】\n\n（此同步碼在 10 分鐘內有效，過期後自動刪除）`);
+      updateSyncCodeBadge();
+      if (isFirstTime) {
+        alert(`🎉 首次雲端上傳成功！\n\n已為您產生專屬的 6 位數同步碼：\n\n👉【 ${syncCode} 】\n\n請在另一台設備上點選「從雲端下載」並輸入此同步碼進行首次綁定。\n\n之後兩台設備將會自動記憶此號碼，一鍵即可完成上傳與下載，不需再次輸入！`);
+      } else {
+        alert(`🎉 雲端備份上傳成功！\n\n（專屬同步碼：${syncCode}，已自動記錄於本設備）`);
+      }
       updateFeedback(`✅ 雲端備份成功！同步碼：${syncCode}`);
     })
     .catch(err => {
@@ -1061,21 +1118,32 @@ function exportHistoryToCloud() {
 }
 
 function importHistoryFromCloud() {
-  const syncCode = prompt('請輸入另一台設備上傳產生的 6 位數同步碼：');
-  if (!syncCode) return;
+  let syncCode = safeGetItem('antigravity_sync_code');
+  if (syncCode) {
+    syncCode = syncCode.trim();
+  }
   
-  const cleanCode = syncCode.trim();
-  if (cleanCode.length !== 6 || isNaN(Number(cleanCode))) {
-    alert('❌ 同步碼格式錯誤，必須為 6 位數字！');
-    return;
+  let isAutoDownload = false;
+  if (syncCode && syncCode.length === 6 && !isNaN(Number(syncCode))) {
+    isAutoDownload = true;
+  } else {
+    // 沒有同步碼，提示使用者輸入
+    const input = prompt('請輸入另一台設備上傳時產生的 6 位數專屬同步碼進行綁定：');
+    if (!input) return;
+    syncCode = input.trim();
+    if (syncCode.length !== 6 || isNaN(Number(syncCode))) {
+      alert('❌ 同步碼格式錯誤，必須為 6 位數字！');
+      return;
+    }
+    safeSetItem('antigravity_sync_code', syncCode);
   }
 
   updateFeedback('正在從雲端下載歷史紀錄...');
 
-  fetch(`https://kvdb.io/${SYNC_BUCKET}/sync_${cleanCode}`)
+  fetch(`https://kvdb.io/${SYNC_BUCKET}/sync_${syncCode}`)
   .then(res => {
     if (res.status === 404) {
-      throw new Error('找不到該同步碼。請確認號碼是否正確，或者上傳端是否已逾期（上傳後 10 分鐘內有效）。');
+      throw new Error(`找不到同步碼【${syncCode}】的雲端資料。請確認號碼是否正確，或者上傳端是否已成功上傳過資料。`);
     }
     if (!res.ok) throw new Error(`HTTP 錯誤 ${res.status}`);
     return res.json();
@@ -1125,15 +1193,28 @@ function importHistoryFromCloud() {
     
     safeSetItem('antigravity_cycling_history', JSON.stringify(mergedHistory));
 
+    // 更新 UI 中的同步碼徽章
+    updateSyncCodeBadge();
+
     // 3. 重新讀取與渲染 UI
     initUsers(); // 會呼叫 loadHistory() 與 updateUI()
     
-    alert(`🎉 雲端同步完成！成功合併並新增了 ${importCount} 筆騎行紀錄。`);
+    if (isAutoDownload) {
+      alert(`🎉 雲端自動下載完成！成功合併並新增了 ${importCount} 筆騎行紀錄。\n\n（使用同步碼：${syncCode}）`);
+    } else {
+      alert(`🎉 首次同步與綁定成功！成功合併並新增了 ${importCount} 筆騎行紀錄。\n\n已自動為您記錄同步碼：${syncCode}，下次下載將直接自動同步，不需再次輸入！`);
+    }
     updateFeedback(`🎉 成功同步 ${importCount} 筆騎行紀錄！`);
   })
   .catch(err => {
     alert(`❌ 下載失敗：${err.message}`);
     updateFeedback(`❌ 下載失敗：${err.message}`);
+    
+    // 如果是首次輸入錯誤導致下載失敗，可以清除不正確的 sync_code
+    if (!isAutoDownload) {
+      localStorage.removeItem('antigravity_sync_code');
+      updateSyncCodeBadge();
+    }
   });
 }
 
