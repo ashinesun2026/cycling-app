@@ -334,6 +334,7 @@ const healthImportCode = document.getElementById('health-import-code');
 const btnCancelHealthImport = document.getElementById('btn-cancel-health-import');
 const btnParseHealthCode = document.getElementById('btn-parse-health-code');
 const healthImportFeedback = document.getElementById('health-import-feedback');
+const btnCopyImportUrl = document.getElementById('btn-copy-import-url');
 
 // === 0. 本地 LocalStorage 安全存取包裝 ===
 // iOS 無痕模式或部分 WebView 會封鎖 LocalStorage，拋出 SecurityError 導致 JS 崩潰。這會使按鈕完全無反應。
@@ -519,6 +520,7 @@ function setupEventListeners() {
   });
 
   btnParseHealthCode.addEventListener('click', parseHealthImportCodeIntoForm);
+  btnCopyImportUrl.addEventListener('click', handleCopyImportUrl);
   formHealthImport.addEventListener('submit', handleSaveHealthImport);
 }
 
@@ -1058,6 +1060,7 @@ function hideHealthImportFeedback() {
 
 function openHealthImportModal(recordId = null) {
   hideHealthImportFeedback();
+  if (btnCopyImportUrl) btnCopyImportUrl.classList.add('hidden');
   const target = recordId ? findRecordById(recordId) : getLatestRecordForActiveUser();
   if (!target) {
     updateFeedback('目前沒有可匯入的訓練紀錄。請先完成一次騎行。');
@@ -1074,6 +1077,18 @@ function openHealthImportModal(recordId = null) {
   healthNote.value = metrics.note || '';
   healthImportCode.value = '';
   modalHealthImport.classList.remove('hidden');
+}
+
+function handleCopyImportUrl() {
+  const raw = healthImportCode.value.trim();
+  if (!raw) return;
+  navigator.clipboard.writeText(raw)
+    .then(() => {
+      showHealthImportFeedback('✅ 已成功複製此網址到剪貼簿！請切換至您的騎行瀏覽器（如 BLE Link），進入「匯入健康」貼上並解析。', 'success');
+    })
+    .catch(err => {
+      showHealthImportFeedback(`❌ 複製失敗，請長按下方文字框手動全選複製。錯誤：${err.message}`, 'error');
+    });
 }
 
 function parseHealthImportCodeIntoForm() {
@@ -1212,8 +1227,9 @@ function handleInboundHealthImport() {
     fillHealthForm(metrics);
     healthTargetRecordId.value = '';
     healthImportCode.value = window.location.href;
+    if (btnCopyImportUrl) btnCopyImportUrl.classList.remove('hidden');
     modalHealthImport.classList.remove('hidden');
-    showHealthImportFeedback('⚠️ 已偵測到健康數據，但在此瀏覽器找不到您的騎行紀錄！請複製網址並至您進行騎行的瀏覽器（例如 BLE Link）的「匯入健康」中貼上並解析。', 'error');
+    showHealthImportFeedback('⚠️ 已偵測到健康數據，但在此瀏覽器找不到您的騎行紀錄！請點擊下方的「📋 一鍵複製匯入網址」按鈕，並至您進行騎行的瀏覽器（例如 BLE Link）的「匯入健康」中貼上並解析。', 'error');
   } else {
     applyHealthMetricsToRecord(latest.id, metrics, { showSummary: true });
     updateFeedback('健康資料已自動匯入！');
