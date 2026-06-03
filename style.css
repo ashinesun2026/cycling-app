@@ -775,6 +775,20 @@ input:checked + .slider:before {
   gap: 4px;
 }
 
+.ride-footer-stats {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.ride-footer-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: max-content;
+}
+
 .footer-title {
   font-size: 0.8rem;
   font-weight: 700;
@@ -787,6 +801,21 @@ input:checked + .slider:before {
   font-weight: 800;
   color: var(--color-cyan);
   font-family: 'Outfit', sans-serif;
+}
+
+.footer-time-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  line-height: 1.05;
+}
+
+.footer-state {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  line-height: 1.1;
 }
 
 .virtual-road-bar-container {
@@ -1453,6 +1482,10 @@ input:checked + .slider:before {
 }
 
 @media (min-width: 769px) and (max-width: 1180px) {
+  .app-container {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 140px);
+  }
+
   .app-main {
     display: flex;
     flex-direction: column;
@@ -1478,21 +1511,23 @@ input:checked + .slider:before {
     gap: 12px;
   }
 
-  .workout-card {
+  .health-feedback-card {
     order: 4;
   }
 
+  .workout-card {
+    order: 5;
+  }
+
   .dashboard-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
   }
 
   #card-power { order: 1; }
   #card-cadence { order: 2; }
   #card-resistance { order: 3; }
-  #card-time { order: 4; }
-  #card-calories { order: 5; }
-  #card-hr { order: 6; }
+  #card-calories { order: 4; }
 
   .metric-card {
     min-height: 118px;
@@ -1527,6 +1562,15 @@ input:checked + .slider:before {
     color: var(--text-primary);
     border-left: 0;
     border-top: 4px solid var(--color-teal);
+  }
+
+  .app-footer {
+    position: fixed;
+    left: 24px;
+    right: 24px;
+    bottom: calc(env(safe-area-inset-bottom) + 12px);
+    z-index: 1300;
+    background: rgba(21, 23, 32, 0.94);
   }
 }
 
@@ -1656,7 +1700,7 @@ input:checked + .slider:before {
   }
 
   .workout-card {
-    order: 4;
+    order: 5;
   }
 
   .right-section {
@@ -1665,6 +1709,10 @@ input:checked + .slider:before {
 
   .visual-card {
     order: 3;
+  }
+
+  .health-feedback-card {
+    order: 4;
   }
 
   .interval-panel {
@@ -1692,12 +1740,12 @@ input:checked + .slider:before {
 
   .visualizer-container {
     order: 2;
-    height: 96px;
+    height: 74px;
     border-radius: 12px;
   }
 
   .cyclist-svg-wrapper {
-    width: 150px;
+    width: 124px;
   }
 
   .ride-feedback {
@@ -1720,13 +1768,7 @@ input:checked + .slider:before {
   #card-power { order: 1; }
   #card-cadence { order: 2; }
   #card-resistance { order: 3; }
-  #card-time { order: 4; }
-  #card-calories { order: 5; }
-  #card-hr { order: 6; }
-
-  #card-hr {
-    grid-column: 1 / -1;
-  }
+  #card-calories { order: 4; }
 
   .metric-card {
     min-height: 108px;
@@ -1785,7 +1827,8 @@ input:checked + .slider:before {
   }
 
   .footer-left {
-    gap: 0;
+    gap: 10px;
+    align-items: center;
   }
 
   .footer-title,
@@ -1795,6 +1838,21 @@ input:checked + .slider:before {
 
   .distance-badge {
     font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .ride-footer-stats {
+    grid-template-columns: auto auto;
+    gap: 10px;
+  }
+
+  .footer-time-value {
+    font-size: 0.96rem;
+    white-space: nowrap;
+  }
+
+  .footer-state {
+    font-size: 0.62rem;
     white-space: nowrap;
   }
 
@@ -1926,11 +1984,11 @@ input:checked + .slider:before {
   }
 
   .visualizer-container {
-    height: 86px;
+    height: 74px;
   }
 
   .cyclist-svg-wrapper {
-    width: 138px;
+    width: 124px;
   }
 
   .ride-feedback {
@@ -2009,5 +2067,97 @@ input:checked + .slider:before {
     margin-left: 0;
     display: grid;
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) and (max-height: 720px) {
+  .app-container {
+    padding: calc(env(safe-area-inset-top) + 4px) 10px calc(env(safe-area-inset-bottom) + 116px);
+    gap: 8px;
+  }
+
+  .app-header {
+    gap: 5px;
+    padding-bottom: 5px;
+  }
+
+  .logo-icon {
+    font-size: 1.35rem;
+  }
+
+  .brand h1 {
+    font-size: 0.92rem;
+  }
+
+  .controls-panel,
+  .connection-group {
+    gap: 4px;
+  }
+
+  .user-switcher-container,
+  .toggle-container {
+    min-height: 32px;
+    padding: 4px 6px;
+  }
+
+  .connection-group .btn,
+  .compat-toggle-container,
+  .btn-icon-only-btn {
+    min-height: 32px;
+    padding: 5px 6px;
+    font-size: 0.72rem;
+  }
+
+  .feedback-card {
+    padding: 10px;
+  }
+
+  .ride-feedback {
+    font-size: 0.94rem;
+    line-height: 1.35;
+    padding: 10px;
+  }
+
+  .metric-card {
+    min-height: 96px;
+    padding: 8px;
+  }
+
+  .metric-value {
+    font-size: 1.55rem;
+  }
+
+  .metric-footer {
+    font-size: 0.62rem;
+  }
+
+  .btn-adjust {
+    width: 30px;
+    height: 30px;
+  }
+
+  .visual-card {
+    padding: 8px;
+  }
+
+  .visualizer-container {
+    height: 48px;
+  }
+
+  .cyclist-svg-wrapper {
+    width: 84px;
+  }
+
+  .app-footer {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .footer-controls {
+    gap: 6px;
+  }
+
+  .footer-controls .btn {
+    padding: 8px;
   }
 }
