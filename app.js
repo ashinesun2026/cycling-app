@@ -500,34 +500,12 @@ async function connectBike() {
   try {
     updateFeedback('正在搜尋飛輪裝置...');
     
-    let options;
-    if (state.useCompatMode) {
-      options = {
-        acceptAllDevices: true,
-        optionalServices: [FTMS_SERVICE_UUID]
-      };
-    } else {
-      options = {
-        filters: [{ services: [FTMS_SERVICE_UUID] }],
-        optionalServices: [FTMS_SERVICE_UUID]
-      };
-    }
+    const options = {
+      filters: [{ services: [FTMS_SERVICE_UUID] }],
+      optionalServices: [FTMS_SERVICE_UUID]
+    };
     
-    try {
-      state.bikeDevice = await navigator.bluetooth.requestDevice(options);
-    } catch (innerErr) {
-      // 容錯降級：若瀏覽器不支持 acceptAllDevices 拋出錯誤，自動退回使用標準 UUID 服務過濾器
-      if (state.useCompatMode) {
-        console.warn("此瀏覽器不支持 acceptAllDevices 模式，自動降級為標準服務過濾器進行連線...", innerErr);
-        options = {
-          filters: [{ services: [FTMS_SERVICE_UUID] }],
-          optionalServices: [FTMS_SERVICE_UUID]
-        };
-        state.bikeDevice = await navigator.bluetooth.requestDevice(options);
-      } else {
-        throw innerErr;
-      }
-    }
+    state.bikeDevice = await navigator.bluetooth.requestDevice(options);
     
     updateFeedback('正在連線飛輪...');
     const server = await state.bikeDevice.gatt.connect();
@@ -625,34 +603,12 @@ async function connectHeartRate() {
   try {
     updateFeedback('正在搜尋藍牙心率設備 (如 Echo 廣播)...');
     
-    let options;
-    if (state.useCompatMode) {
-      options = {
-        acceptAllDevices: true,
-        optionalServices: [HR_SERVICE_UUID]
-      };
-    } else {
-      options = {
-        filters: [{ services: [HR_SERVICE_UUID] }],
-        optionalServices: [HR_SERVICE_UUID]
-      };
-    }
+    const options = {
+      filters: [{ services: [HR_SERVICE_UUID] }],
+      optionalServices: [HR_SERVICE_UUID]
+    };
     
-    try {
-      state.hrDevice = await navigator.bluetooth.requestDevice(options);
-    } catch (innerErr) {
-      // 容錯降級：若瀏覽器不支持 acceptAllDevices 拋出錯誤，自動退回使用標準 UUID 服務過濾器
-      if (state.useCompatMode) {
-        console.warn("此瀏覽器不支持 acceptAllDevices 模式，自動降級為標準服務過濾器進行連線...", innerErr);
-        options = {
-          filters: [{ services: [HR_SERVICE_UUID] }],
-          optionalServices: [HR_SERVICE_UUID]
-        };
-        state.hrDevice = await navigator.bluetooth.requestDevice(options);
-      } else {
-        throw innerErr;
-      }
-    }
+    state.hrDevice = await navigator.bluetooth.requestDevice(options);
     
     updateFeedback('正在連線心率設備...');
     const server = await state.hrDevice.gatt.connect();
