@@ -561,10 +561,11 @@ async function connectBike() {
   } catch (error) {
     console.error('飛輪連線失敗:', error);
     let errMsg = error.message || error.toString();
-    if (errMsg.includes('User cancelled') || errMsg.includes('cancelled')) {
+    let errName = error.name || 'Error';
+    if (errMsg.includes('User cancelled') || errMsg.includes('cancelled') || errName.includes('User cancelled') || errName.includes('cancelled')) {
       updateFeedback('連線取消：您未選擇任何藍牙設備。');
     } else {
-      updateFeedback(`飛輪連線失敗: ${errMsg}`);
+      updateFeedback(`飛輪連線失敗: [${errName}] ${errMsg} (代碼: ${error.code || '無'})`);
     }
   }
 }
@@ -673,10 +674,11 @@ async function connectHeartRate() {
   } catch (error) {
     console.error('心率連線失敗:', error);
     let errMsg = error.message || error.toString();
-    if (errMsg.includes('User cancelled') || errMsg.includes('cancelled')) {
+    let errName = error.name || 'Error';
+    if (errMsg.includes('User cancelled') || errMsg.includes('cancelled') || errName.includes('User cancelled') || errName.includes('cancelled')) {
       updateFeedback('連線取消：您未選擇任何心率設備。');
     } else {
-      updateFeedback(`心率連線失敗: ${errMsg}`);
+      updateFeedback(`心率連線失敗: [${errName}] ${errMsg} (代碼: ${error.code || '無'})`);
     }
   }
 }
