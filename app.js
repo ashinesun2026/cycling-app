@@ -1018,7 +1018,7 @@ function findRecordById(recordId) {
   return getHistoryFromStorage().find(record => record.id === recordId) || null;
 }
 
-const SYNC_BUCKET = 'CxX5fJSkkpTqeMZD6jMGcK';
+const SYNC_BUCKET = 'USttZbN2suPCwch8W2QRuH';
 
 function updateSyncCodeBadge() {
   if (!syncCodeDisplay) return;
