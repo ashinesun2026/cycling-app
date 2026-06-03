@@ -334,7 +334,6 @@ const healthImportCode = document.getElementById('health-import-code');
 const btnCancelHealthImport = document.getElementById('btn-cancel-health-import');
 const btnParseHealthCode = document.getElementById('btn-parse-health-code');
 const healthImportFeedback = document.getElementById('health-import-feedback');
-const btnCopyImportUrl = document.getElementById('btn-copy-import-url');
 const btnExportHistory = document.getElementById('btn-export-history');
 const btnImportHistory = document.getElementById('btn-import-history');
 const syncCodeDisplay = document.getElementById('sync-code-display');
@@ -532,7 +531,6 @@ function setupEventListeners() {
   });
 
   btnParseHealthCode.addEventListener('click', parseHealthImportCodeIntoForm);
-  btnCopyImportUrl.addEventListener('click', handleCopyImportUrl);
   formHealthImport.addEventListener('submit', handleSaveHealthImport);
 
   // 歷史紀錄雲端備份與還原
@@ -1360,7 +1358,6 @@ function hideHealthImportFeedback() {
 
 function openHealthImportModal(recordId = null) {
   hideHealthImportFeedback();
-  if (btnCopyImportUrl) btnCopyImportUrl.classList.add('hidden');
   const target = recordId ? findRecordById(recordId) : getLatestRecordForActiveUser();
   if (!target) {
     // 即使沒有騎行紀錄，也允許開啟彈窗進行解析，但給予明確引導
@@ -1389,18 +1386,6 @@ function openHealthImportModal(recordId = null) {
   modalHealthImport.classList.remove('hidden');
 }
 
-function handleCopyImportUrl() {
-  const raw = healthImportCode.value.trim();
-  if (!raw) return;
-  navigator.clipboard.writeText(raw)
-    .then(() => {
-      showHealthImportFeedback('✅ 已成功複製此網址到剪貼簿！請切換至您的騎行瀏覽器（如 BLE Link），進入「匯入健康」貼上並解析。', 'success');
-    })
-    .catch(err => {
-      showHealthImportFeedback(`❌ 複製失敗，請長按下方文字框手動全選複製。錯誤：${err.message}`, 'error');
-    });
-}
-
 function parseHealthImportCodeIntoForm() {
   hideHealthImportFeedback();
   const raw = healthImportCode.value.trim();
@@ -1420,8 +1405,15 @@ function parseHealthImportCodeIntoForm() {
       data = JSON.parse(raw);
     }
 
-    fillHealthForm(normalizeHealthMetrics(data));
-    showHealthImportFeedback('✅ 匯入碼已解析，確認上方數字無誤後，點選「套用到訓練」。', 'success');
+    const metrics = normalizeHealthMetrics(data);
+    fillHealthForm(metrics);
+
+    if (!hasUsableHealthMetrics(metrics)) {
+      showHealthImportFeedback('⚠️ 已解析，但沒有任何可用數字。這代表捷徑沒有從健康 App 抓到資料，或網址參數是空的。請確認有戴 Apple Watch、健康 App 有該次資料，再重新跑 v7 捷徑；也可以直接手動填上方欄位。', 'error');
+      return;
+    }
+
+    showHealthImportFeedback('✅ 匯入碼已解析，數字已帶入上方欄位。確認後點「套用到訓練」。', 'success');
   } catch (error) {
     showHealthImportFeedback(`❌ 匯入碼解析失敗：${error.message}`, 'error');
   }
@@ -1491,6 +1483,10 @@ function normalizeHealthMetrics(input = {}) {
   };
 }
 
+function hasUsableHealthMetrics(metrics = {}) {
+  return Boolean(metrics.avgHr || metrics.maxHr || metrics.activeKcal || metrics.exerciseMin || metrics.rpe);
+}
+
 function applyHealthMetricsToRecord(recordId, metrics, options = {}) {
   const history = getHistoryFromStorage();
   const targetIndex = history.findIndex(record => record.id === recordId);
@@ -1532,14 +1528,23 @@ function handleInboundHealthImport() {
 
   hideHealthImportFeedback();
 
+  if (!hasUsableHealthMetrics(metrics)) {
+    fillHealthForm(metrics);
+    healthTargetRecordId.value = latest?.id || '';
+    healthImportCode.value = window.location.href;
+    modalHealthImport.classList.remove('hidden');
+    showHealthImportFeedback('⚠️ 捷徑網址已收到，但沒有任何可用數字。通常是超過查詢時間、沒戴 Apple Watch，或健康 App 沒有該次紀錄。請重新跑 v7，或手動填入上方欄位。', 'error');
+    window.history.replaceState({}, document.title, window.location.pathname);
+    return;
+  }
+
   if (!latest) {
-    // 跨瀏覽器/設備防呆：如果在此瀏覽器找不到歷史紀錄，將數據帶入匯入表單並打開 Modal，且填入匯入碼以供複製
+    // 跨瀏覽器/設備防呆：如果在此瀏覽器找不到歷史紀錄，將數據帶入匯入表單並打開 Modal。
     fillHealthForm(metrics);
     healthTargetRecordId.value = '';
     healthImportCode.value = window.location.href;
-    if (btnCopyImportUrl) btnCopyImportUrl.classList.remove('hidden');
     modalHealthImport.classList.remove('hidden');
-    showHealthImportFeedback('⚠️ 已偵測到健康數據，但在此瀏覽器找不到您的騎行紀錄！請點擊下方的「📋 一鍵複製匯入網址」按鈕，並至您進行騎行的瀏覽器（例如 BLE Link）的「匯入健康」中貼上並解析。', 'error');
+    showHealthImportFeedback('⚠️ 已偵測到健康數字，但此瀏覽器找不到騎行紀錄。請先在騎行設備按「從雲端下載」同步紀錄，再貼上這段匯入碼解析。', 'error');
   } else {
     applyHealthMetricsToRecord(latest.id, metrics, { showSummary: true });
     updateFeedback('健康資料已自動匯入！');
