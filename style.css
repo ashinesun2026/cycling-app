@@ -1509,11 +1509,11 @@ input:checked + .slider:before {
   }
 
   .health-feedback-card {
-    order: 4;
+    order: 5;
   }
 
   .workout-card {
-    order: 5;
+    order: 4;
   }
 
   .dashboard-grid {
@@ -1690,7 +1690,7 @@ input:checked + .slider:before {
   }
 
   .workout-card {
-    order: 5;
+    order: 4;
   }
 
   .right-section {
@@ -1702,7 +1702,7 @@ input:checked + .slider:before {
   }
 
   .health-feedback-card {
-    order: 4;
+    order: 5;
   }
 
   .interval-panel {
