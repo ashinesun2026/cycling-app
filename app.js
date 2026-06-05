@@ -80,6 +80,7 @@ let state = {
   modeStartedElapsed: 0,
   lastAutoResistance: null,
   lastPhaseKey: '',
+  manualResistanceOverrideUntil: 0,
   autoStartBlocked: false,
 
   // 定時器
@@ -187,11 +188,11 @@ const TRAINING_PLANS = {
     label: '進階',
     title: '金字塔課表',
     targetPower: '逐段上升再下降',
-    targetCadence: '70~92 RPM',
+    targetCadence: '60~76 RPM',
     resistance: null,
     intensity: '進階',
     focus: '配速能力、耐受力、恢復控制',
-    coach: '金字塔課表：前段保守，最高點撐住，後段練控制不要亂掉。'
+    coach: '金字塔：低轉高張力，最高點穩住，不追高轉。'
   }
 };
 
@@ -242,13 +243,13 @@ const PHASE_PLANS = {
     { name: '最後緩和', duration: 120, resistance: 3, targetCadence: '68-78', targetPower: '70-95W', info: '最後兩分鐘緩和。' }
   ],
   pyramid: [
-    { name: '暖身', duration: 180, resistance: 5, targetCadence: '72-82', targetPower: '95-125W', info: '穩定進入課表。' },
-    { name: '第一階', duration: 180, resistance: 7, targetCadence: '72-82', targetPower: '125-155W', info: '逐步提高張力。' },
-    { name: '第二階', duration: 180, resistance: 9, targetCadence: '70-80', targetPower: '150-185W', info: '呼吸加深，姿勢維持。' },
-    { name: '高峰', duration: 180, resistance: 12, targetCadence: '66-76', targetPower: '180-225W', info: '最高點，穩住不要亂衝。' },
-    { name: '下降控制', duration: 180, resistance: 9, targetCadence: '70-80', targetPower: '145-180W', info: '降低強度但不鬆掉。' },
-    { name: '耐受整理', duration: 180, resistance: 7, targetCadence: '72-82', targetPower: '120-155W', info: '把節奏整理回穩。' },
-    { name: '最後緩和', duration: 120, resistance: 3, targetCadence: '68-78', targetPower: '70-95W', info: '最後兩分鐘緩和。' }
+    { name: '暖身', duration: 180, resistance: 6, targetCadence: '66-76', targetPower: '100-130W', info: '先踩穩。' },
+    { name: '第一階', duration: 180, resistance: 8, targetCadence: '64-74', targetPower: '130-165W', info: '加張力。' },
+    { name: '第二階', duration: 180, resistance: 10, targetCadence: '62-72', targetPower: '155-195W', info: '穩住推踩。' },
+    { name: '高峰', duration: 180, resistance: 13, targetCadence: '60-70', targetPower: '185-235W', info: '最高點，不追轉速。' },
+    { name: '下降控制', duration: 180, resistance: 10, targetCadence: '62-72', targetPower: '150-190W', info: '降壓但不鬆。' },
+    { name: '耐受整理', duration: 180, resistance: 8, targetCadence: '64-74', targetPower: '125-165W', info: '踩回穩定。' },
+    { name: '最後緩和', duration: 120, resistance: 4, targetCadence: '64-74', targetPower: '75-105W', info: '緩和收操。' }
   ]
 };
 
@@ -752,6 +753,7 @@ function setWorkoutMode(mode) {
   state.intervalPhaseIndex = 0;
   state.lastAutoResistance = null;
   state.lastPhaseKey = '';
+  state.manualResistanceOverrideUntil = 0;
 
   if (getActivePhases().length) {
     updateTrainingPhase({ forceResistance: true, announce: true });
@@ -1530,16 +1532,7 @@ function parseHealthImportCodeIntoForm() {
   }
 
   try {
-    let data;
-    if (raw.startsWith('http')) {
-      const url = new URL(raw);
-      data = Object.fromEntries(url.searchParams.entries());
-    } else if (raw.includes('=')) {
-      data = Object.fromEntries(new URLSearchParams(raw).entries());
-    } else {
-      data = JSON.parse(raw);
-    }
-
+    const data = parseHealthImportPayload(raw);
     const metrics = normalizeHealthMetrics(data);
     fillHealthForm(metrics);
 
@@ -1552,6 +1545,33 @@ function parseHealthImportCodeIntoForm() {
   } catch (error) {
     showHealthImportFeedback(`❌ 匯入碼解析失敗：${error.message}`, 'error');
   }
+}
+
+function parseHealthImportPayload(raw) {
+  let data;
+  if (raw.startsWith('http')) {
+    const url = new URL(raw);
+    data = Object.fromEntries(url.searchParams.entries());
+  } else if (raw.includes('=')) {
+    data = Object.fromEntries(new URLSearchParams(raw).entries());
+  } else {
+    data = JSON.parse(raw);
+  }
+  return expandEmbeddedHealthPayload(data);
+}
+
+function expandEmbeddedHealthPayload(input = {}) {
+  const output = { ...input };
+  ['data', 'payload', 'json', 'metrics', 'health', 'body'].forEach(key => {
+    const value = input[key];
+    if (typeof value !== 'string' || !value.trim()) return;
+    try {
+      Object.assign(output, JSON.parse(value));
+    } catch (_) {
+      // ignore non-JSON embedded values
+    }
+  });
+  return output;
 }
 
 function fillHealthForm(metrics) {
@@ -1592,28 +1612,60 @@ function handleSaveHealthImport(e) {
   modalHealthImport.classList.add('hidden');
 }
 
+const HEALTH_KEY_ALIASES = {
+  avgHr: ['avgHr', 'avgHR', 'averageHeartRate', 'average_hr', 'avg_hr', 'avgHeartRate', 'heartRateAverage', 'heart_rate_average', 'heartRateAvg', '平均心率', '平均心率BPM'],
+  maxHr: ['maxHr', 'maxHR', 'maximumHeartRate', 'maxHeartRate', 'maximum_hr', 'max_hr', 'heartRateMax', 'peakHeartRate', '最高心率', '最高心率BPM'],
+  activeKcal: ['activeKcal', 'activeCalories', 'activeEnergy', 'activeEnergyBurned', 'activeKilocalories', 'active_calories', 'active_kcal', 'calories', 'kcal', 'energy', '主動熱量', '活動熱量', '卡路里'],
+  exerciseMin: ['exerciseMin', 'exerciseMinutes', 'exercise_min', 'minutes', 'workoutMinutes', 'workoutDuration', 'duration', 'durationMin', 'durationMinutes', '運動分鐘', '訓練分鐘', '分鐘'],
+  rpe: ['rpe', 'RPE', 'effort', 'perceivedEffort', 'perceived_exertion', 'fatigue', '疲勞', '體感'],
+  note: ['note', 'memo', 'comment', '備註', '筆記']
+};
+
+const HEALTH_PARAM_KEYS = new Set(
+  Object.values(HEALTH_KEY_ALIASES).flat().map(normalizeHealthKey).concat(['data', 'payload', 'json', 'metrics', 'health', 'body'])
+);
+
+function normalizeHealthKey(key) {
+  return String(key || '').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g, '');
+}
+
+function flattenHealthInput(input = {}, output = {}) {
+  Object.entries(input || {}).forEach(([key, value]) => {
+    const normalizedKey = normalizeHealthKey(key);
+    output[normalizedKey] = value;
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      flattenHealthInput(value, output);
+    }
+  });
+  return output;
+}
+
+function readHealthValue(source, aliases) {
+  for (const alias of aliases) {
+    const key = normalizeHealthKey(alias);
+    if (source[key] !== undefined && source[key] !== '') return source[key];
+  }
+  return null;
+}
+
 function normalizeHealthMetrics(input = {}) {
-  const pick = (...keys) => keys.find(key => input[key] !== undefined && input[key] !== '');
-  const toNumber = (key) => {
-    if (!key) return null;
-    const cleaned = String(input[key]).replace(/[^\d.-]/g, '');
-    const value = Number(cleaned);
-    return Number.isFinite(value) ? Math.round(value) : null;
+  const source = flattenHealthInput(expandEmbeddedHealthPayload(input));
+  const toNumber = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    const cleaned = String(value).replace(/[^\d.-]/g, '');
+    const numberValue = Number(cleaned);
+    return Number.isFinite(numberValue) ? Math.round(numberValue) : null;
   };
 
-  const avgHrKey = pick('avgHr', 'averageHeartRate', 'avg_hr');
-  const maxHrKey = pick('maxHr', 'maximumHeartRate', 'max_hr');
-  const activeKcalKey = pick('activeKcal', 'calories', 'kcal', 'active_calories');
-  const exerciseMinKey = pick('exerciseMin', 'minutes', 'exerciseMinutes', 'exercise_min');
-  const rpeKey = pick('rpe', 'effort');
+  const noteValue = readHealthValue(source, HEALTH_KEY_ALIASES.note);
 
   return {
-    avgHr: toNumber(avgHrKey),
-    maxHr: toNumber(maxHrKey),
-    activeKcal: toNumber(activeKcalKey),
-    exerciseMin: toNumber(exerciseMinKey),
-    rpe: toNumber(rpeKey),
-    note: String(input.note || input.memo || '').trim(),
+    avgHr: toNumber(readHealthValue(source, HEALTH_KEY_ALIASES.avgHr)),
+    maxHr: toNumber(readHealthValue(source, HEALTH_KEY_ALIASES.maxHr)),
+    activeKcal: toNumber(readHealthValue(source, HEALTH_KEY_ALIASES.activeKcal)),
+    exerciseMin: toNumber(readHealthValue(source, HEALTH_KEY_ALIASES.exerciseMin)),
+    rpe: toNumber(readHealthValue(source, HEALTH_KEY_ALIASES.rpe)),
+    note: String(noteValue || '').trim(),
     importedAt: new Date().toISOString()
   };
 }
@@ -1655,10 +1707,17 @@ function applyHealthMetricsToRecord(recordId, metrics, options = {}) {
   updateFeedback(`健康資料已匯入，已產生下次訓練模式：${nextPlan.title}。`);
 }
 
+function hasInboundHealthImportParams(params) {
+  if (!params || !params.toString()) return false;
+  for (const key of params.keys()) {
+    if (HEALTH_PARAM_KEYS.has(normalizeHealthKey(key))) return true;
+  }
+  return hasUsableHealthMetrics(normalizeHealthMetrics(Object.fromEntries(params.entries())));
+}
+
 function handleInboundHealthImport() {
   const params = new URLSearchParams(window.location.search);
-  const hasHealthImport = ['avgHr', 'maxHr', 'activeKcal', 'exerciseMin', 'rpe', 'note'].some(key => params.has(key));
-  if (!hasHealthImport) return;
+  if (!hasInboundHealthImportParams(params)) return;
 
   const rawMetrics = Object.fromEntries(params.entries());
   const metrics = normalizeHealthMetrics(rawMetrics);
@@ -2107,6 +2166,39 @@ function getCurrentPhaseContext(mode = state.workoutMode, elapsed = getModeElaps
   return null;
 }
 
+function getContinuationRecommendation(context) {
+  if (!context?.planComplete || !hasPedalingSignal()) return null;
+  const currentResistance = Math.max(1, state.resistance || context.phase.resistance || 5);
+
+  if (state.power >= 170 || currentResistance >= 11) {
+    return {
+      name: '延長緩和',
+      resistance: Math.max(4, currentResistance - 3),
+      targetCadence: '60-72',
+      targetPower: '80-120W',
+      info: '課表完成，降阻續踩。'
+    };
+  }
+
+  if (state.cadence >= 80) {
+    return {
+      name: '降轉穩踩',
+      resistance: Math.min(13, currentResistance + 1),
+      targetCadence: '62-72',
+      targetPower: '100-145W',
+      info: '拉一點阻力，別追高轉。'
+    };
+  }
+
+  return {
+    name: '穩踩延長',
+    resistance: Math.max(6, currentResistance),
+    targetCadence: '62-74',
+    targetPower: '100-150W',
+    info: '維持可控輸出。'
+  };
+}
+
 function updateTrainingPhase(options = {}) {
   const context = getCurrentPhaseContext();
   const plan = getTrainingPlan(state.workoutMode);
@@ -2119,37 +2211,47 @@ function updateTrainingPhase(options = {}) {
   }
 
   const { phase, phaseIndex, phaseElapsed, phaseRemaining, phases, planComplete } = context;
-  const phaseKey = `${state.workoutMode}:${phaseIndex}`;
+  const continuation = getContinuationRecommendation(context);
+  const activePhase = continuation || phase;
+  const phaseKey = continuation ? `${state.workoutMode}:extend:${activePhase.name}:${activePhase.resistance}` : `${state.workoutMode}:${phaseIndex}`;
 
   state.intervalPhaseIndex = phaseIndex;
   state.intervalTimeElapsed = phaseElapsed;
-  updateIntervalUI(context);
+  updateIntervalUI(context, continuation);
 
-  targetPowerZone.innerText = `目標瓦數: ${phase.targetPower}`;
-  resRange.innerText = `自動阻力: ${phase.resistance} 段`;
+  targetPowerZone.innerText = `目標瓦數: ${activePhase.targetPower}`;
+  resRange.innerText = continuation ? `延長建議: ${activePhase.resistance} 段` : `自動阻力: ${activePhase.resistance} 段`;
 
   const shouldApplyResistance =
     options.forceResistance ||
     state.lastPhaseKey !== phaseKey ||
-    state.lastAutoResistance !== phase.resistance ||
-    (state.isPlaying && state.elapsedTime % 15 === 0 && state.resistance !== phase.resistance);
+    state.lastAutoResistance !== activePhase.resistance ||
+    (
+      state.isPlaying &&
+      state.elapsedTime % 15 === 0 &&
+      state.resistance !== activePhase.resistance &&
+      state.elapsedTime >= state.manualResistanceOverrideUntil
+    );
 
   if (shouldApplyResistance) {
-    setResistanceLevel(phase.resistance, 'auto');
-    state.lastAutoResistance = phase.resistance;
+    setResistanceLevel(activePhase.resistance, 'auto');
+    state.lastAutoResistance = activePhase.resistance;
   }
 
   if (options.announce || state.lastPhaseKey !== phaseKey) {
     const next = phases[phaseIndex + 1];
-    const doneText = planComplete ? '課表時間已完成，可按「結束並存檔」，或繼續緩和騎。' : '';
-    const nextText = next ? `下一段 ${next.name}，阻力 ${next.resistance}。` : '這是最後階段。';
-    updateFeedback(`${plan.title}｜${phase.name}：阻力 ${phase.resistance}，目標 ${phase.targetCadence} RPM / ${phase.targetPower}。${phase.info} ${nextText} ${doneText}`.trim());
+    if (continuation) {
+      updateFeedback(`延長騎｜${activePhase.name}\n阻力 ${activePhase.resistance}｜${activePhase.targetCadence} RPM\n${activePhase.info}`);
+    } else {
+      const nextText = next ? `下一段 ${next.name}，阻力 ${next.resistance}` : (planComplete ? '課表完成，可存檔或續騎' : '最後階段');
+      updateFeedback(`${plan.title}｜${phase.name}\n阻力 ${phase.resistance}｜${phase.targetCadence} RPM\n${nextText}`);
+    }
   }
 
   state.lastPhaseKey = phaseKey;
 }
 
-function updateIntervalUI(context = getCurrentPhaseContext()) {
+function updateIntervalUI(context = getCurrentPhaseContext(), continuation = null) {
   if (!context) {
     intervalPanel.classList.add('hidden');
     return;
@@ -2157,6 +2259,14 @@ function updateIntervalUI(context = getCurrentPhaseContext()) {
 
   const { phase, phaseIndex, phaseElapsed, phaseRemaining, phases, planComplete } = context;
   intervalPanel.classList.remove('hidden');
+  if (continuation) {
+    intervalPhase.innerText = `延長騎：${continuation.name}`;
+    intervalTimerDisp.innerText = `+${formatCountdown(context.modeElapsed - context.totalDuration)}`;
+    intervalProgress.style.width = '100%';
+    intervalNextTip.innerText = `建議：阻力 ${continuation.resistance}，${continuation.targetCadence} RPM / ${continuation.targetPower}`;
+    return;
+  }
+
   intervalPhase.innerText = `課表階段 (${phaseIndex + 1}/${phases.length}): ${phase.name}`;
   intervalTimerDisp.innerText = planComplete ? '完成' : formatCountdown(phaseRemaining);
 
@@ -2205,6 +2315,7 @@ function collectWorkoutSample() {
 
 // === 手動與自動阻力微調 ===
 function adjustResistance(delta) {
+  state.manualResistanceOverrideUntil = state.elapsedTime + 45;
   setResistanceLevel(state.resistance + delta, 'manual');
 }
 
@@ -2331,7 +2442,7 @@ function updateUI() {
 
   if (state.isPlaying) {
     if (state.workoutMode === 'free') {
-      updateFeedback(`自由騎行中。目前踩踏：${state.cadence} RPM / 功率：${state.power} W。`);
+      updateFeedback(`自由騎\n${state.power} W｜${state.cadence} RPM\n依體感調阻力。`);
     } else {
       updateFeedback(getLiveCoachingText());
     }
@@ -2341,57 +2452,20 @@ function updateUI() {
 function getLiveCoachingText() {
   const plan = getTrainingPlan(state.workoutMode);
   const context = getCurrentPhaseContext();
-  const phase = context?.phase;
+  const continuation = getContinuationRecommendation(context);
+  const phase = continuation || context?.phase;
   const powerRange = parseRange(phase?.targetPower || plan.targetPower);
   const cadenceRange = parseRange(phase?.targetCadence || plan.targetCadence);
   const phaseName = phase?.name || plan.title;
-  const remaining = context ? formatCountdown(context.phaseRemaining) : '--:--';
-  const planDone = context?.planComplete;
-  const advice = [];
+  const remaining = continuation ? `+${formatCountdown(context.modeElapsed - context.totalDuration)}` : (context ? formatCountdown(context.phaseRemaining) : '--:--');
+  let cue = phase?.info || '穩住輸出。';
 
-  if (phase) {
-    advice.push(`阻力 ${phase.resistance}`);
-  }
+  if (powerRange && state.power > powerRange.max) cue = '功率偏高，先收住。';
+  if (cadenceRange && state.cadence > cadenceRange.max) cue = '轉速偏高，加阻穩踩。';
+  if (cadenceRange && state.cadence < cadenceRange.min && powerRange && state.power >= powerRange.min) cue = '重踩可接受，膝蓋直線。';
+  if (continuation) cue = continuation.info;
 
-  if (powerRange && state.power > 0) {
-    if (state.power < powerRange.min) {
-      advice.push(`功率偏低，先穩住姿勢，再把踩壓拉到 ${phase.targetPower}`);
-    } else if (state.power > powerRange.max) {
-      advice.push('功率偏高，這段先收住，避免後段掉速');
-    } else {
-      advice.push('功率在目標內');
-    }
-  } else if (phase) {
-    advice.push(`目標功率 ${phase.targetPower}`);
-  }
-
-  if (cadenceRange && state.cadence > 0) {
-    if (state.cadence < cadenceRange.min) {
-      if (powerRange && state.power >= powerRange.min) {
-        advice.push('踏頻低但功率夠，這是重踩段可接受；保持膝蓋直線和核心穩定');
-      } else {
-        advice.push(`踏頻低於本段目標 ${phase.targetCadence}，不是硬追高轉；先確認阻力是否太重，再小幅加快`);
-      }
-    } else if (state.cadence > cadenceRange.max) {
-      advice.push('踏頻高於本段目標，阻力張力可能不夠；保持順踩，必要時讓自動阻力接管');
-    } else {
-      advice.push('踏頻在本段目標內');
-    }
-  } else if (phase) {
-    advice.push(`目標踏頻 ${phase.targetCadence} RPM`);
-  }
-
-  if (context && context.modeElapsed < 180) {
-    advice.push('前 3 分鐘不要衝，讓呼吸和腿溫上來');
-  } else if (context && context.phaseRemaining <= 30 && !planDone) {
-    advice.push('剩 30 秒準備切換，先把呼吸整理好');
-  }
-
-  if (planDone) {
-    advice.push('課表已完成，可結束存檔或繼續低阻力緩和');
-  }
-
-  return `${plan.title}｜${phaseName} 剩 ${remaining}：${advice.slice(0, 4).join('；')}。`;
+  return `${continuation ? '延長騎' : plan.title}｜${phaseName} ${remaining}\n阻力 ${phase?.resistance ?? '--'}｜${phase?.targetCadence || '--'} RPM\n${cue}`;
 }
 
 function toggleCardGlow(id, condition, glowClass) {

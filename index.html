@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>飛輪騎行訓練儀表板</title>
-  <link rel="stylesheet" href="style.css?v=2.23">
+  <link rel="stylesheet" href="style.css?v=2.24">
   <!-- 載入 Google Fonts 設計字型 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -57,10 +57,6 @@
           <button id="btn-connect-bike" class="btn btn-primary">
             <span class="btn-icon">🚴</span>
             <span id="bike-conn-text">連線飛輪</span>
-          </button>
-          <button id="btn-health-import" class="btn btn-secondary">
-            <span class="btn-icon">📥</span>
-            <span id="health-import-text">匯入健康</span>
           </button>
           <button id="btn-help-guide" class="btn-icon-only-btn" title="飛輪連線與健康匯入說明">❓ 使用說明</button>
         </div>
@@ -144,7 +140,7 @@
                 <span class="mode-badge badge-hard">進階</span>
                 <h3>金字塔課表</h3>
               </div>
-              <p>20 分鐘金字塔。漸進加壓、最高點、下降控制、最後緩和。</p>
+              <p>20 分鐘低轉高張力金字塔。漸進加壓、最高點、下降控制。</p>
             </button>
           </div>
 
@@ -261,6 +257,10 @@
           <div class="metric-footer">
             <span class="metric-trend" id="hr-zone">訓練後用捷徑補完健康資料</span>
           </div>
+          <button id="btn-health-import" class="btn btn-secondary health-card-import-btn">
+            <span class="btn-icon">📥</span>
+            <span id="health-import-text">匯入健康</span>
+          </button>
         </div>
       </section>
 
@@ -404,7 +404,7 @@
     
     <!-- 快取版本檢測標籤 -->
     <div style="text-align:center; padding:15px; font-size:11px; color:#555; font-family:monospace; border-top:1px dashed rgba(255,255,255,0.05); margin-top:20px;">
-      網頁快取檢測版本：<strong>v2.23 (2026-06-04 05:05)</strong>
+      網頁快取檢測版本：<strong>v2.24 (2026-06-05 00:20)</strong>
     </div>
   </div>
 
@@ -685,6 +685,6 @@
   </div>
 
   <!-- 用於載入核心 JS 的程式 -->
-  <script src="app.js?v=2.23-footer-time"></script>
+  <script src="app.js?v=2.24-ride-health-resistance"></script>
 </body>
 </html>
