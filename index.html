@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>飛輪騎行訓練儀表板</title>
-  <link rel="stylesheet" href="style.css?v=2.24">
+  <link rel="stylesheet" href="style.css?v=2.25">
   <!-- 載入 Google Fonts 設計字型 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,14 +46,8 @@
           <span class="toggle-label">模擬騎行</span>
         </div>
 
-        <!-- 藍牙連線按鈕與相容模式 -->
+        <!-- 藍牙連線按鈕與說明 -->
         <div class="connection-group">
-          <!-- 相容搜尋模式核取框 -->
-          <div class="compat-toggle-container">
-            <input type="checkbox" id="compat-mode-checkbox">
-            <label for="compat-mode-checkbox" class="compat-label-text" title="若找不到飛輪，請勾選此項以搜尋所有藍牙裝置">🔍 相容搜尋模式</label>
-          </div>
-
           <button id="btn-connect-bike" class="btn btn-primary">
             <span class="btn-icon">🚴</span>
             <span id="bike-conn-text">連線飛輪</span>
@@ -167,6 +161,7 @@
         <!-- 騎行狀態動畫視覺化 -->
         <div class="card visual-card">
           <div class="visualizer-container">
+            <div class="visual-mode-label" id="visual-mode-label">目前模式｜自由騎行</div>
             <!-- 虛擬路段線條 (會滑動) -->
             <div class="scrolling-road-bg">
               <div class="road-line"></div>
@@ -404,7 +399,7 @@
     
     <!-- 快取版本檢測標籤 -->
     <div style="text-align:center; padding:15px; font-size:11px; color:#555; font-family:monospace; border-top:1px dashed rgba(255,255,255,0.05); margin-top:20px;">
-      網頁快取檢測版本：<strong>v2.24 (2026-06-05 00:20)</strong>
+      網頁快取檢測版本：<strong>v2.25 (2026-06-05 00:45)</strong>
     </div>
   </div>
 
@@ -633,10 +628,6 @@
               <strong>飛輪正被其他軟體佔用</strong>：<br>
               藍牙設備一次只能連接一個主機。如果您的飛輪已經跟原廠 App、Zwift、或其他手機連上了，請先將它們中斷或強制關閉那些 App。
             </li>
-            <li>
-              <strong>使用「相容搜尋模式」</strong>：<br>
-              部分飛輪沒有在廣播包中寫明其標準運動服務 UUID。<strong>勾選右上角「🔍 相容搜尋模式」</strong>，App 會改用「搜尋全部設備」的方式，您可以從清單中手動挑選飛輪。
-            </li>
           </ol>
         </div>
 
@@ -685,6 +676,6 @@
   </div>
 
   <!-- 用於載入核心 JS 的程式 -->
-  <script src="app.js?v=2.24-ride-health-resistance"></script>
+  <script src="app.js?v=2.25-ride-layout"></script>
 </body>
 </html>

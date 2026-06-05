@@ -47,7 +47,6 @@ const FITNESS_MACHINE_CONTROL_POINT_CHAR_UUID = '00002ad9-0000-1000-8000-00805f9
 let state = {
   isDemoMode: false,
   isPlaying: false,
-  useCompatMode: false, // 是否使用相容連線模式 (acceptAllDevices)
 
   // 藍牙設備對象
   bikeDevice: null,
@@ -283,6 +282,7 @@ const cadenceStatus = document.getElementById('cadence-status');
 const hrZone = document.getElementById('hr-zone');
 const valStateText = document.getElementById('val-state-text');
 const rideFeedback = document.getElementById('ride-feedback');
+const visualModeLabel = document.getElementById('visual-mode-label');
 
 const roadProgress = document.getElementById('road-progress');
 const roadAvatar = document.getElementById('road-avatar');
@@ -298,8 +298,7 @@ const userSelect = document.getElementById('user-select');
 const btnEditProfile = document.getElementById('btn-edit-profile');
 const historyList = document.getElementById('history-list');
 
-// 相容模式與連線說明按鈕
-const compatModeCheckbox = document.getElementById('compat-mode-checkbox');
+// 連線說明按鈕
 const btnHelpGuide = document.getElementById('btn-help-guide');
 const modalGuide = document.getElementById('modal-guide');
 const btnCloseGuide = document.getElementById('btn-close-guide');
@@ -565,12 +564,7 @@ function setupEventListeners() {
   btnHealthImport.addEventListener('click', () => openHealthImportModal());
   demoToggle.addEventListener('change', handleDemoModeToggle);
 
-  // 相容模式與說明按鈕
-  compatModeCheckbox.addEventListener('change', (e) => {
-    state.useCompatMode = e.target.checked;
-    console.log(`已切換相容模式狀態: ${state.useCompatMode}`);
-  });
-
+  // 說明按鈕
   btnHelpGuide.addEventListener('click', () => {
     modalGuide.classList.remove('hidden');
   });
@@ -782,10 +776,7 @@ async function connectBike() {
   try {
     updateFeedback('正在搜尋飛輪裝置...');
 
-    const options = state.useCompatMode ? {
-      acceptAllDevices: true,
-      optionalServices: [FTMS_SERVICE_UUID]
-    } : {
+    const options = {
       filters: [{ services: [FTMS_SERVICE_UUID] }],
       optionalServices: [FTMS_SERVICE_UUID]
     };
@@ -873,7 +864,7 @@ async function sendResistanceToBike(level) {
     } catch (e) {
       try {
         await state.controlPointChar.writeValueWithResponse(new Uint8Array([0x04, target]));
-        console.log(`已用相容格式發送阻力指令: ${target}`);
+        console.log(`已用備援格式發送阻力指令: ${target}`);
       } catch (fallbackError) {
         console.error("發送阻力指令失敗:", e, fallbackError);
       }
@@ -2409,6 +2400,7 @@ function startDemoGenerator() {
 function updateUI() {
   valPower.innerText = state.power;
   valCadence.innerText = state.cadence;
+  if (visualModeLabel) visualModeLabel.innerText = getVisualModeLabelText();
   const latest = getLatestRecordForActiveUser();
   if (latest?.healthImported) {
     valHr.innerText = '已匯入';
@@ -2447,6 +2439,15 @@ function updateUI() {
       updateFeedback(getLiveCoachingText());
     }
   }
+}
+
+function getVisualModeLabelText() {
+  const plan = getTrainingPlan(state.workoutMode);
+  const context = getCurrentPhaseContext();
+  const continuation = getContinuationRecommendation(context);
+  if (continuation) return `目前模式｜延長騎 · ${continuation.name}`;
+  if (context?.phase) return `目前模式｜${plan.title} · ${context.phase.name}`;
+  return `目前模式｜${plan.title}`;
 }
 
 function getLiveCoachingText() {

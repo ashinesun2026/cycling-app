@@ -172,42 +172,12 @@ body::before {
   transform: scale(1.15);
 }
 
-/* 連線控制群組與相容模式 */
+/* 連線控制群組 */
 .connection-group {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-}
-
-.compat-toggle-container {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--border-card);
-  padding: 8px 12px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.compat-toggle-container:hover {
-  border-color: rgba(255,255,255,0.15);
-}
-
-.compat-toggle-container input[type="checkbox"] {
-  accent-color: var(--color-cyan);
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.compat-label-text {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: pointer;
 }
 
 .btn-icon-only-btn {
@@ -545,6 +515,26 @@ input:checked + .slider:before {
   justify-content: center;
   align-items: center;
   border: 1px solid rgba(255,255,255,0.03);
+}
+
+.visual-mode-label {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  z-index: 4;
+  max-width: calc(100% - 24px);
+  padding: 5px 9px;
+  border: 1px solid rgba(102, 252, 241, 0.35);
+  border-radius: 999px;
+  background: rgba(7, 9, 14, 0.72);
+  color: var(--color-cyan);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 
 /* 飛逝道路背景 */
@@ -1638,13 +1628,6 @@ input:checked + .slider:before {
     gap: 6px;
   }
 
-  .compat-toggle-container {
-    grid-column: span 1;
-    justify-content: center;
-    padding: 7px 8px;
-    min-height: 38px;
-  }
-
   .connection-group .btn {
     width: 100%;
     justify-content: center;
@@ -1751,6 +1734,14 @@ input:checked + .slider:before {
     border-radius: 12px;
   }
 
+  .visual-mode-label {
+    top: 6px;
+    left: 8px;
+    max-width: calc(100% - 16px);
+    padding: 4px 7px;
+    font-size: 0.7rem;
+  }
+
   .cyclist-svg-wrapper {
     width: 124px;
   }
@@ -1769,7 +1760,7 @@ input:checked + .slider:before {
 
   .dashboard-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
+    gap: 5px;
   }
 
   #card-power { order: 1; }
@@ -1779,11 +1770,11 @@ input:checked + .slider:before {
 
   .metric-card {
     display: grid;
-    grid-template-columns: minmax(66px, 1fr) minmax(42px, auto);
+    grid-template-columns: minmax(62px, 1fr) minmax(48px, auto);
     grid-template-rows: auto auto;
     align-items: center;
-    min-height: 96px;
-    padding: 9px;
+    min-height: 82px;
+    padding: 7px;
     border-radius: 12px;
     min-width: 0;
   }
@@ -1821,12 +1812,12 @@ input:checked + .slider:before {
 
   .metric-footer {
     font-size: 0.68rem;
-    line-height: 1.35;
+    line-height: 1.18;
     overflow-wrap: anywhere;
   }
 
   .metric-value {
-    font-size: 1.9rem;
+    font-size: 2.05rem;
     letter-spacing: 0;
   }
 
@@ -1852,8 +1843,8 @@ input:checked + .slider:before {
   }
 
   .btn-adjust {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     font-size: 0.95rem;
   }
 
@@ -2010,15 +2001,6 @@ input:checked + .slider:before {
     font-size: 0.76rem;
   }
 
-  .compat-label-text {
-    font-size: 0.68rem;
-  }
-
-  .compat-toggle-container {
-    min-height: 34px;
-    padding: 6px 7px;
-  }
-
   .btn-icon-only-btn {
     min-height: 34px;
     padding: 7px;
@@ -2047,11 +2029,12 @@ input:checked + .slider:before {
   }
 
   .metric-card {
-    min-height: 92px;
+    min-height: 76px;
+    padding: 6px;
   }
 
   .metric-value {
-    font-size: 1.62rem;
+    font-size: 1.9rem;
   }
 
   .metric-unit {
@@ -2147,7 +2130,6 @@ input:checked + .slider:before {
   }
 
   .connection-group .btn,
-  .compat-toggle-container,
   .btn-icon-only-btn {
     min-height: 32px;
     padding: 5px 6px;
@@ -2165,12 +2147,12 @@ input:checked + .slider:before {
   }
 
   .metric-card {
-    min-height: 96px;
-    padding: 8px;
+    min-height: 74px;
+    padding: 6px;
   }
 
   .metric-value {
-    font-size: 1.55rem;
+    font-size: 1.75rem;
   }
 
   .metric-footer {
@@ -2178,8 +2160,8 @@ input:checked + .slider:before {
   }
 
   .btn-adjust {
-    width: 30px;
-    height: 30px;
+    width: 26px;
+    height: 26px;
   }
 
   .visual-card {
