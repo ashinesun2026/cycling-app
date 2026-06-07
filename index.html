@@ -189,7 +189,14 @@
 
         <!-- 本週累計面板 -->
         <div class="card weekly-stats-card">
-          <h2 class="card-title">本週運動累計</h2>
+          <div class="stats-header-row">
+            <h2 class="card-title" id="stats-panel-title">本週運動累計</h2>
+            <div class="stats-tabs">
+              <button class="stats-tab-btn active" data-range="week">本週</button>
+              <button class="stats-tab-btn" data-range="month">本月</button>
+              <button class="stats-tab-btn" data-range="year">一年</button>
+            </div>
+          </div>
           <div class="weekly-stats-grid">
             <div class="weekly-stat-item">
               <span class="weekly-stat-val" id="weekly-count">0</span>

@@ -82,6 +82,9 @@ let state = {
   // 運動模式設定
   workoutMode: 'personalized',
 
+  // 統計篩選區間 ('week', 'month', 'year')
+  statsRange: 'week',
+
   // 階段計時與阻力設定
   intervalTimeElapsed: 0,
   intervalPhaseIndex: 0,
@@ -511,6 +514,16 @@ function setupEventListeners() {
 
   btnParseHealthCode.addEventListener('click', parseHealthImportCodeIntoForm);
   formHealthImport.addEventListener('submit', handleSaveHealthImport);
+
+  // 統計區間切換
+  document.querySelectorAll('.stats-tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.stats-tab-btn').forEach(b => b.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+      state.statsRange = e.currentTarget.dataset.range;
+      loadHistory();
+    });
+  });
 
   // 雲端備份與下載
   btnExportHistory.addEventListener('click', exportHistoryToCloud);
@@ -1724,8 +1737,16 @@ function loadHistory() {
     });
   }
 
-  // 計算並渲染本週運動累計與 SVG 柱狀圖
-  calculateWeeklyTotals(userRecs);
+  // 更新累計統計標題
+  const titleEl = document.getElementById('stats-panel-title');
+  if (titleEl) {
+    if (state.statsRange === 'week') titleEl.innerText = '本週運動累計';
+    else if (state.statsRange === 'month') titleEl.innerText = '本月運動累計';
+    else if (state.statsRange === 'year') titleEl.innerText = '一年運動累計';
+  }
+
+  // 計算並渲染對應區間的運動累計與 SVG 柱狀圖
+  calculateStatsByRange(userRecs, state.statsRange);
 }
 
 function showPastSummary(rec) {
@@ -1756,58 +1777,108 @@ function showPastSummary(rec) {
   }
 }
 
-function calculateWeeklyTotals(userRecs) {
+function calculateStatsByRange(userRecs, range) {
   const now = new Date();
-  // 取得本週一的零點
-  const day = now.getDay();
-  const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now.setDate(diffToMonday));
-  monday.setHours(0,0,0,0);
+  let filteredRecs = [];
+  let startDate = null;
 
-  // 篩選本週一之後的紀錄
-  const weeklyRecs = userRecs.filter(r => new Date(r.date) >= monday);
+  if (range === 'week') {
+    // 取得本週一的零點
+    const day = now.getDay();
+    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+    startDate = new Date(now.setDate(diffToMonday));
+    startDate.setHours(0, 0, 0, 0);
+    filteredRecs = userRecs.filter(r => new Date(r.date) >= startDate);
+  } else if (range === 'month') {
+    // 取得本月一號的零點
+    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    startDate.setHours(0, 0, 0, 0);
+    filteredRecs = userRecs.filter(r => new Date(r.date) >= startDate);
+  } else if (range === 'year') {
+    // 今年以來的紀錄
+    startDate = new Date(now.getFullYear(), 0, 1);
+    startDate.setHours(0, 0, 0, 0);
+    filteredRecs = userRecs.filter(r => new Date(r.date) >= startDate);
+  } else {
+    filteredRecs = [...userRecs];
+  }
 
-  let count = weeklyRecs.length;
-  let totalSecs = weeklyRecs.reduce((sum, r) => sum + r.duration, 0);
-  let totalKcal = weeklyRecs.reduce((sum, r) => sum + r.calories, 0);
-  let totalDist = weeklyRecs.reduce((sum, r) => sum + r.distance, 0);
+  let count = filteredRecs.length;
+  let totalSecs = filteredRecs.reduce((sum, r) => sum + r.duration, 0);
+  let totalKcal = filteredRecs.reduce((sum, r) => sum + r.calories, 0);
+  let totalDist = filteredRecs.reduce((sum, r) => sum + r.distance, 0);
 
   weeklyCount.innerText = count;
   weeklyTime.innerText = `${Math.round(totalSecs / 60)}m`;
   weeklyCalories.innerText = Math.round(totalKcal);
   weeklyDistance.innerText = totalDist.toFixed(1);
 
-  // 繪製本週每日 SVG 柱狀圖 (週一至週日)
-  drawWeeklySvgChart(weeklyRecs, monday);
+  // 繪製對應區間的 SVG 柱狀圖
+  drawStatsSvgChart(filteredRecs, range);
 }
 
-function drawWeeklySvgChart(weeklyRecs, monday) {
+function drawStatsSvgChart(filteredRecs, range) {
   weeklySvgChart.innerHTML = '';
   
-  // 計算週一至週日每一天的卡路里
-  const daysData = Array(7).fill(0);
-  const daysLabel = ['一', '二', '三', '四', '五', '六', '日'];
-  
-  weeklyRecs.forEach(rec => {
-    const recDate = new Date(rec.date);
-    let dayIdx = recDate.getDay() - 1; // 0=Mon, 5=Sat, -1=Sun
-    if (dayIdx === -1) dayIdx = 6; // Sunday
-    if (dayIdx >= 0 && dayIdx < 7) {
-      daysData[dayIdx] += rec.calories;
-    }
-  });
+  let numBars = 7;
+  let chartData = [];
+  let chartLabels = [];
+  let colWidth = 28;
+  let gap = 12;
+  let startX = 20;
 
-  const maxVal = Math.max(100, ...daysData); // 最小高度尺度為 100 kcal
-  const width = 300;
+  if (range === 'week') {
+    numBars = 7;
+    chartData = Array(7).fill(0);
+    chartLabels = ['一', '二', '三', '四', '五', '六', '日'];
+    colWidth = 24;
+    gap = 10;
+    startX = 35;
+
+    filteredRecs.forEach(rec => {
+      const recDate = new Date(rec.date);
+      let dayIdx = recDate.getDay() - 1; // 0=Mon, 5=Sat, -1=Sun
+      if (dayIdx === -1) dayIdx = 6;
+      if (dayIdx >= 0 && dayIdx < 7) {
+        chartData[dayIdx] += rec.calories;
+      }
+    });
+  } else if (range === 'month') {
+    numBars = 5;
+    chartData = Array(5).fill(0);
+    chartLabels = ['W1', 'W2', 'W3', 'W4', 'W5'];
+    colWidth = 32;
+    gap = 16;
+    startX = 35;
+
+    filteredRecs.forEach(rec => {
+      const recDate = new Date(rec.date);
+      const dayOfMonth = recDate.getDate();
+      const weekIdx = Math.min(4, Math.floor((dayOfMonth - 1) / 7));
+      chartData[weekIdx] += rec.calories;
+    });
+  } else if (range === 'year') {
+    numBars = 12;
+    chartData = Array(12).fill(0);
+    chartLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    colWidth = 14;
+    gap = 6;
+    startX = 30;
+
+    filteredRecs.forEach(rec => {
+      const recDate = new Date(rec.date);
+      const monthIdx = recDate.getMonth(); // 0-11
+      if (monthIdx >= 0 && monthIdx < 12) {
+        chartData[monthIdx] += rec.calories;
+      }
+    });
+  }
+
+  const maxVal = Math.max(100, ...chartData);
   const height = 70;
-  const colWidth = 28;
-  const gap = 12;
-  const startX = 20;
 
-  // 繪製柱狀圖
-  daysData.forEach((val, idx) => {
+  chartData.forEach((val, idx) => {
     const x = startX + idx * (colWidth + gap);
-    // 柱子高度
     const colHeight = (val / maxVal) * (height - 25);
     const y = height - 15 - colHeight;
 
@@ -1824,27 +1895,27 @@ function drawWeeklySvgChart(weeklyRecs, monday) {
     }
     weeklySvgChart.appendChild(rect);
 
-    // 數值文字 (只在有數據時顯示)
+    // 數值文字
     if (val > 0) {
       const txtVal = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       txtVal.setAttribute('x', x + colWidth / 2);
       txtVal.setAttribute('y', y - 4);
       txtVal.setAttribute('text-anchor', 'middle');
       txtVal.setAttribute('fill', '#ccff00');
-      txtVal.setAttribute('font-size', '7.5px');
+      txtVal.setAttribute('font-size', range === 'year' ? '6.5px' : '7.5px');
       txtVal.setAttribute('font-family', 'Outfit');
       txtVal.textContent = Math.round(val);
       weeklySvgChart.appendChild(txtVal);
     }
 
-    // 星期標籤
+    // 底部標籤
     const txtLbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     txtLbl.setAttribute('x', x + colWidth / 2);
     txtLbl.setAttribute('y', height - 4);
     txtLbl.setAttribute('text-anchor', 'middle');
     txtLbl.setAttribute('fill', '#8e90a6');
     txtLbl.setAttribute('font-size', '9px');
-    txtLbl.textContent = daysLabel[idx];
+    txtLbl.textContent = chartLabels[idx];
     weeklySvgChart.appendChild(txtLbl);
   });
 }
