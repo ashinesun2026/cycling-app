@@ -1,0 +1,2191 @@
+/* === 全域變數與重設 === */
+:root {
+  --bg-main: #0b0c10;
+  --bg-card: rgba(26, 28, 36, 0.75);
+  --bg-card-hover: rgba(35, 38, 48, 0.85);
+  --border-card: rgba(255, 255, 255, 0.08);
+  --text-primary: #ffffff;
+  --text-secondary: #a0aec0;
+  
+  /* 運動發光主題色 */
+  --color-cyan: #66fcf1;
+  --color-teal: #45a29e;
+  --color-green: #10b981;
+  --color-blue: #3b82f6;
+  --color-yellow: #ffb400;
+  --color-orange: #f97316;
+  --color-red: #ef4444;
+  --color-purple: #8b5cf6;
+
+  /* 動態控制變數 (由 JS 寫入控制) */
+  --wheel-speed: 0s;  /* 輪子轉速 (秒數，0s 代表不轉) */
+  --crank-speed: 0s;  /* 腳踏曲柄轉速 (秒數，0s 代表不轉) */
+  --road-speed: 0s;   /* 道路線條飛逝速度 (秒數) */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.5;
+  
+  /* iOS 底部 Home Bar 避讓 */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 漸層動態背景 */
+body::before {
+  content: "";
+  position: fixed;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  background: radial-gradient(circle at 10% 20%, rgba(69, 162, 158, 0.08) 0%, transparent 40%),
+              radial-gradient(circle at 90% 80%, rgba(249, 115, 22, 0.06) 0%, transparent 45%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* === iOS / 瀏覽器警告橫幅 === */
+.warning-banner {
+  background: linear-gradient(to right, #7a1c1c, var(--color-red));
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  z-index: 2000;
+  position: relative;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  /* iOS 劉海/動態島避讓 */
+  padding-top: calc(env(safe-area-inset-top) + 8px);
+}
+
+.warning-icon {
+  font-size: 1.4rem;
+}
+
+.warning-banner.hidden {
+  display: none !important;
+}
+
+/* 主容器 */
+.app-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 100vh;
+}
+
+/* === Header === */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-card);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  background: linear-gradient(to right, #ffffff, var(--color-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.logo-icon {
+  font-size: 1.8rem;
+  filter: drop-shadow(0 0 8px var(--color-cyan));
+}
+
+/* 控制面板與按鈕 */
+.controls-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* 多使用者下拉選單 */
+.user-switcher-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-card);
+  padding: 6px 12px;
+  border-radius: 12px;
+}
+
+.select-input {
+  background: transparent;
+  color: white;
+  border: none;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  padding-right: 8px;
+}
+
+.select-input option {
+  background-color: #1a1c24;
+  color: white;
+}
+
+.btn-icon-only {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  outline: none;
+}
+
+.btn-icon-only:hover {
+  transform: scale(1.15);
+}
+
+/* 連線控制群組 */
+.connection-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-icon-only-btn {
+  background: transparent;
+  border: 1px solid var(--color-cyan);
+  color: var(--color-cyan);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-icon-only-btn:hover {
+  background: rgba(102, 252, 241, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 0 10px rgba(102, 252, 241, 0.2);
+}
+
+.btn {
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-teal), #2b6d6a);
+  color: var(--text-primary);
+  box-shadow: 0 4px 15px rgba(69, 162, 158, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-cyan), var(--color-teal));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 252, 241, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #a71d1d, #7a1c1c);
+  color: var(--text-primary);
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, var(--color-red), #a71d1d);
+  transform: translateY(-2px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 模擬器 Switch 開關 */
+.toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-card);
+}
+
+.toggle-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 22px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(255,255,255,0.2);
+  transition: .4s;
+}
+
+.switch .slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: var(--color-cyan);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+/* === 卡片模組 === */
+.card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-card);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  transition: border-color 0.3s ease;
+}
+
+.card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* === 主體 Layout === */
+.app-main {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 24px;
+  min-width: 0;
+}
+
+.left-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.right-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+/* === 目標模式與選擇 === */
+.workout-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.workout-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text-primary);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.workout-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.workout-btn.active {
+  background: rgba(102, 252, 241, 0.05);
+  border-color: var(--color-cyan);
+  box-shadow: inset 0 0 10px rgba(102, 252, 241, 0.05);
+}
+
+.mode-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mode-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.mode-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+.badge-free { background-color: var(--color-teal); color: var(--bg-main); }
+.badge-easy { background-color: var(--color-green); color: var(--bg-main); }
+.badge-moderate { background-color: var(--color-blue); color: var(--text-primary); }
+.badge-hard { background-color: var(--color-red); color: var(--text-primary); }
+.badge-tempo { background-color: var(--color-yellow); color: var(--bg-main); }
+.badge-spin { background-color: var(--color-cyan); color: var(--bg-main); }
+.badge-climb { background-color: var(--color-orange); color: var(--text-primary); }
+.badge-personal { background-color: var(--color-purple); color: var(--text-primary); }
+
+.workout-btn p {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.workout-btn.hidden {
+  display: none;
+}
+
+/* 間歇計時面板 */
+.interval-panel {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-card);
+  border-radius: 16px;
+  transition: all 0.4s ease;
+}
+
+.interval-panel.hidden {
+  display: none;
+}
+
+.interval-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.interval-phase {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--color-yellow);
+}
+
+.interval-timer {
+  font-family: 'Outfit', monospace;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.progress-bar-container {
+  height: 8px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(to right, var(--color-teal), var(--color-yellow));
+  border-radius: 4px;
+  transition: width 0.3s linear;
+}
+
+.interval-next-tip {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* === 騎行狀態動畫視覺化 === */
+.visual-card {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 280px;
+}
+
+.feedback-card {
+  padding: 16px;
+}
+
+.feedback-card .ride-feedback {
+  margin-top: 0;
+}
+
+.visualizer-container {
+  position: relative;
+  height: 220px;
+  background: linear-gradient(to bottom, #11141d, #191c26);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+.visual-mode-label {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  z-index: 4;
+  max-width: calc(100% - 24px);
+  padding: 5px 9px;
+  border: 1px solid rgba(102, 252, 241, 0.35);
+  border-radius: 999px;
+  background: rgba(7, 9, 14, 0.72);
+  color: var(--color-cyan);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* 飛逝道路背景 */
+.scrolling-road-bg {
+  position: absolute;
+  bottom: 30px;
+  width: 200%;
+  display: flex;
+  justify-content: space-around;
+}
+
+.road-line {
+  width: 40px;
+  height: 3px;
+  background-color: rgba(255,255,255,0.15);
+  box-shadow: 0 0 4px rgba(255,255,255,0.1);
+  animation: moveRoad var(--road-speed) linear infinite;
+}
+
+@keyframes moveRoad {
+  from { transform: translateX(100px); }
+  to { transform: translateX(-300px); }
+}
+
+.cyclist-svg-wrapper {
+  width: 280px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.cyclist-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* SVG 旋轉控制 */
+#back-wheel {
+  transform-origin: 70px 150px;
+  animation: spin var(--wheel-speed) linear infinite;
+}
+
+#front-wheel {
+  transform-origin: 250px 150px;
+  animation: spin var(--wheel-speed) linear infinite;
+}
+
+#crankset {
+  transform-origin: 160px 150px;
+  animation: spin var(--crank-speed) linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 即時回饋導引語 */
+.ride-feedback {
+  margin-top: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-cyan);
+  border-left: 4px solid var(--color-teal);
+  white-space: pre-line;
+}
+
+.health-card-import-btn {
+  margin-top: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* === 六宮格數據卡片 === */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  min-width: 0;
+}
+
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  min-height: 135px;
+}
+
+.metric-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--bg-card-hover);
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.metric-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.metric-icon {
+  font-size: 1.1rem;
+}
+
+.metric-value-container {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 12px 0 6px 0;
+}
+
+.metric-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: -1px;
+}
+
+.metric-value-compact {
+  font-size: 1.35rem;
+  letter-spacing: 0;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+
+.metric-unit {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.metric-footer {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.text-yellow { color: var(--color-yellow); filter: drop-shadow(0 0 6px rgba(255,180,0,0.3)); }
+.text-green { color: var(--color-green); filter: drop-shadow(0 0 6px rgba(16,185,129,0.3)); }
+.text-red { color: var(--color-red); filter: drop-shadow(0 0 6px rgba(239,68,68,0.3)); }
+.text-blue { color: var(--color-blue); filter: drop-shadow(0 0 6px rgba(59,130,246,0.3)); }
+.text-teal { color: var(--color-cyan); filter: drop-shadow(0 0 6px rgba(102,252,241,0.3)); }
+.text-orange { color: var(--color-orange); filter: drop-shadow(0 0 6px rgba(249,115,22,0.3)); }
+
+/* 大字體計時器樣式 */
+.text-timer {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: 'Outfit', monospace;
+  letter-spacing: 0.5px;
+}
+
+/* 阻力增減控制 */
+.resistance-control-layout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.res-display {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.btn-adjust {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  color: white;
+  font-family: inherit;
+  font-size: 1.3rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-adjust:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: var(--color-cyan);
+}
+
+.btn-adjust:active {
+  transform: scale(0.9);
+}
+
+/* 心臟跳動動畫 */
+.heart-beat-icon {
+  animation: heartbeat 1s infinite alternate;
+  transform-origin: center;
+}
+
+@keyframes heartbeat {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.15); }
+}
+
+/* 狀態卡片呼吸燈發光 */
+.card-glow-active-cyan { border-color: rgba(102,252,241,0.4) !important; box-shadow: 0 0 15px rgba(102,252,241,0.15); }
+.card-glow-active-green { border-color: rgba(16,185,129,0.4) !important; box-shadow: 0 0 15px rgba(16,185,129,0.15); }
+.card-glow-active-yellow { border-color: rgba(255,180,0,0.4) !important; box-shadow: 0 0 15px rgba(255,180,0,0.15); }
+.card-glow-active-red { border-color: rgba(239,68,68,0.4) !important; box-shadow: 0 0 15px rgba(239,68,68,0.15); }
+
+/* === 底部：虛擬公路進度條 === */
+.app-footer {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.footer-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ride-footer-stats {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.ride-footer-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: max-content;
+}
+
+.footer-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.distance-badge {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-cyan);
+  font-family: 'Outfit', sans-serif;
+}
+
+.footer-time-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  line-height: 1.05;
+}
+
+.footer-state {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  line-height: 1.1;
+}
+
+.virtual-road-bar-container {
+  flex-grow: 1;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  position: relative;
+  border: 1px solid var(--border-card);
+  margin: 8px 0;
+  min-width: 300px;
+}
+
+.virtual-road-fill {
+  height: 100%;
+  background: linear-gradient(to right, rgba(69, 162, 158, 0.2), var(--color-teal));
+  border-radius: 12px;
+  transition: width 0.5s ease-out;
+}
+
+.virtual-rider-avatar {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.3rem;
+  transition: left 0.5s ease-out;
+  z-index: 3;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.milestone {
+  position: absolute;
+  bottom: -22px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  transform: translateX(-50%);
+}
+
+.ms-start { left: 4%; }
+.ms-end { left: 96%; }
+
+.footer-controls {
+  display: flex;
+  gap: 12px;
+}
+
+#cyclist-body {
+  animation: pedaling-body 0.6s infinite alternate ease-in-out;
+  transform-origin: 155px 95px;
+  animation-play-state: paused;
+}
+
+@keyframes pedaling-body {
+  0% { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(2px) rotate(1deg); }
+}
+
+/* === 歷史紀錄與運動累計 === */
+.history-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+.weekly-stats-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.weekly-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  height: 100%;
+  align-content: center;
+}
+
+.weekly-stat-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.weekly-stat-val {
+  font-size: 1.8rem;
+  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+  color: var(--color-cyan);
+}
+
+.weekly-stat-lbl {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.card-header-with-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card-header-with-actions .card-title {
+  margin-bottom: 0 !important;
+}
+
+.history-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sync-code-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.sync-code-badge:hover {
+  background: rgba(102, 252, 241, 0.1);
+  color: var(--color-cyan);
+  border-color: rgba(102, 252, 241, 0.4);
+}
+
+.btn-link {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--color-cyan);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: inherit;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-link:hover {
+  background: rgba(102, 252, 241, 0.12);
+  border-color: rgba(102, 252, 241, 0.3);
+  color: #fff;
+}
+
+.history-list-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.history-list-container {
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* 客製滾動條 */
+.history-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+.history-list-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+.history-list-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.history-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.no-records {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 40px 0;
+  line-height: 1.6;
+}
+
+.history-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateX(2px);
+}
+
+.history-item-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-item-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.history-item-date {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.history-item-data {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.history-item-data strong {
+  color: var(--text-primary);
+}
+
+.history-item-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.history-item-calories {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-orange);
+}
+
+.history-item-distance {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* === Modals 遮罩與卡片 === */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(5, 5, 8, 0.85);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  z-index: 3000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.hidden {
+  display: none !important;
+}
+
+.modal-card {
+  background: #151720;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 480px;
+  max-height: min(92dvh, 760px);
+  padding: 24px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: modalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes modalEnter {
+  from { transform: scale(0.92) translateY(10px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.modal-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  background: linear-gradient(to right, #ffffff, var(--color-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.modal-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 34px;
+  flex-shrink: 0;
+}
+
+.modal-back-btn {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.text-center { text-align: center; }
+.justify-center { justify-content: center !important; }
+
+/* 表單佈局 */
+.form-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  padding: 12px;
+  color: white;
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+  resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: var(--color-cyan);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.radio-group {
+  display: flex;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.radio-label input {
+  accent-color: var(--color-cyan);
+  width: 18px;
+  height: 18px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border-card);
+  padding-top: 16px;
+  flex-shrink: 0;
+}
+
+.modal-footer-actions {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
+/* 彈窗內部的反饋提示訊息 */
+.modal-feedback-msg {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  transition: all 0.3s ease;
+  word-break: break-all;
+}
+
+.modal-feedback-msg.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-red);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.modal-feedback-msg.success {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-green);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.modal-feedback-msg.info {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--color-blue);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.modal-feedback-msg.hidden {
+  display: none !important;
+}
+
+/* === 運動結算報告樣式 === */
+.modal-summary-card {
+  max-width: 580px;
+}
+
+.modal-health-card {
+  max-width: 620px;
+}
+
+.summary-success-badge {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-green);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 20px;
+  align-self: center;
+}
+
+.summary-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.health-import-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(102, 252, 241, 0.04);
+  border: 1px solid rgba(102, 252, 241, 0.14);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 18px;
+}
+
+.health-import-panel strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.health-import-panel p,
+.import-mode-box p {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.import-mode-box {
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.import-mode-box strong {
+  color: var(--color-cyan);
+  font-size: 0.9rem;
+}
+
+.summary-stat-item {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.summary-lbl {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.summary-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+  margin-top: 2px;
+}
+
+/* 數據分析氣泡建議 */
+.analysis-report-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.analysis-report-container h4 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.analysis-feedback-bubble {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-card);
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.advice-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.advice-item {
+  border-left: 3px solid var(--color-cyan);
+  padding-left: 8px;
+}
+
+.advice-item strong {
+  color: var(--color-cyan);
+}
+
+.advice-item.warning {
+  border-left-color: var(--color-orange);
+}
+.advice-item.warning strong {
+  color: var(--color-orange);
+}
+
+/* === 疑難排解彈窗樣式 === */
+.modal-guide-card {
+  max-width: 560px;
+  max-height: 85vh;
+}
+
+.scrollable-modal-body {
+  max-height: none;
+  padding-right: 8px;
+  text-align: left;
+}
+
+/* 滾動條樣式 */
+.scrollable-modal-body::-webkit-scrollbar {
+  width: 5px;
+}
+.scrollable-modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.01);
+}
+.scrollable-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.guide-section h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: var(--color-cyan);
+}
+
+.guide-section p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.guide-section ol, .guide-section ul {
+  padding-left: 20px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  line-height: 1.5;
+}
+
+.guide-section strong {
+  color: var(--text-primary);
+}
+
+.guide-divider {
+  margin: 20px 0;
+  border: none;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+/* === 響應式調整 (優先 iOS 手機版優化) === */
+@media (max-width: 900px) {
+  .app-main {
+    grid-template-columns: 1fr;
+  }
+  .history-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1180px) {
+  .app-container {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 140px);
+  }
+
+  .app-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .left-section {
+    display: contents;
+  }
+
+  .feedback-card {
+    order: 1;
+    padding: 16px;
+  }
+
+  .right-section {
+    order: 2;
+  }
+
+  .visual-card {
+    order: 3;
+    min-height: auto;
+    gap: 12px;
+  }
+
+  .health-feedback-card {
+    order: 5;
+  }
+
+  .workout-card {
+    order: 4;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  #card-power { order: 1; }
+  #card-cadence { order: 2; }
+  #card-resistance { order: 3; }
+  #card-calories { order: 4; }
+
+  .metric-card {
+    min-height: 118px;
+    padding: 14px;
+  }
+
+  .metric-value {
+    font-size: 2rem;
+    letter-spacing: 0;
+  }
+
+  .text-timer {
+    font-size: 1.5rem;
+  }
+
+  .visualizer-container {
+    order: 2;
+    height: 130px;
+  }
+
+  .cyclist-svg-wrapper {
+    width: 200px;
+  }
+
+  .ride-feedback {
+    order: 1;
+    margin-top: 0;
+    padding: 16px;
+    text-align: left;
+    font-size: 1.24rem;
+    line-height: 1.55;
+    color: var(--text-primary);
+    border-left: 0;
+    border-top: 4px solid var(--color-teal);
+  }
+
+  .app-footer {
+    position: fixed;
+    left: 24px;
+    right: 24px;
+    bottom: calc(env(safe-area-inset-bottom) + 12px);
+    z-index: 1300;
+    background: rgba(21, 23, 32, 0.94);
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 142px);
+    gap: 12px;
+  }
+
+  .app-header {
+    position: static;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    padding: 2px 0 8px;
+    border-bottom-color: rgba(102, 252, 241, 0.16);
+  }
+
+  .brand {
+    justify-content: space-between;
+  }
+
+  .brand h1 {
+    font-size: 1.05rem;
+    letter-spacing: 0;
+  }
+
+  .controls-panel {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: stretch;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .user-switcher-container {
+    width: 100%;
+    justify-content: space-between;
+    padding: 6px 8px;
+    border-radius: 10px;
+  }
+
+  .toggle-container {
+    width: 100%;
+    justify-content: space-between;
+    padding: 6px 8px;
+    border-radius: 10px;
+  }
+
+  .connection-group {
+    grid-column: 1 / -1;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .connection-group .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-icon-only-btn {
+    grid-column: span 1;
+    width: 100%;
+    text-align: center;
+    min-height: 38px;
+    padding: 8px;
+  }
+
+  .workout-options {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    margin: 0 -4px;
+    padding: 0 4px 6px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .workout-options::-webkit-scrollbar {
+    display: none;
+  }
+
+  .workout-btn {
+    min-width: 210px;
+    scroll-snap-align: start;
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .mode-header {
+    margin-bottom: 6px;
+  }
+
+  .mode-header h3 {
+    font-size: 0.95rem;
+  }
+
+  .workout-btn p {
+    font-size: 0.74rem;
+  }
+
+  .app-main {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .left-section {
+    display: contents;
+  }
+
+  .feedback-card {
+    order: 1;
+    padding: 12px;
+  }
+
+  .workout-card {
+    order: 4;
+  }
+
+  .right-section {
+    order: 2;
+  }
+
+  .visual-card {
+    order: 3;
+  }
+
+  .health-feedback-card {
+    order: 5;
+  }
+
+  .interval-panel {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .interval-status {
+    gap: 10px;
+  }
+
+  .interval-phase {
+    font-size: 0.92rem;
+  }
+
+  .interval-timer {
+    font-size: 1.2rem;
+  }
+
+  .visual-card {
+    min-height: auto;
+    gap: 10px;
+  }
+
+  .visualizer-container {
+    order: 2;
+    height: 74px;
+    border-radius: 12px;
+  }
+
+  .visual-mode-label {
+    top: 6px;
+    left: 8px;
+    max-width: calc(100% - 16px);
+    padding: 4px 7px;
+    font-size: 0.7rem;
+  }
+
+  .cyclist-svg-wrapper {
+    width: 124px;
+  }
+
+  .ride-feedback {
+    order: 1;
+    text-align: left;
+    font-size: 1.22rem;
+    line-height: 1.42;
+    padding: 16px;
+    margin-top: 0;
+    border-left: 0;
+    border-top: 4px solid var(--color-teal);
+    color: var(--text-primary);
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  #card-power { order: 1; }
+  #card-cadence { order: 2; }
+  #card-resistance { order: 3; }
+  #card-calories { order: 4; }
+
+  .metric-card {
+    display: grid;
+    grid-template-columns: minmax(62px, 1fr) minmax(48px, auto);
+    grid-template-rows: auto auto;
+    align-items: center;
+    min-height: 82px;
+    padding: 7px;
+    border-radius: 12px;
+    min-width: 0;
+  }
+
+  .metric-header {
+    grid-column: 1;
+    grid-row: 1;
+    justify-content: flex-start;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .metric-value-container {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    justify-content: flex-end;
+    text-align: right;
+    margin: 0;
+    min-width: 0;
+  }
+
+  .metric-footer {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .health-card-import-btn {
+    grid-column: 1 / -1;
+  }
+
+  .metric-title {
+    font-size: 0.73rem;
+    word-break: keep-all;
+  }
+
+  .metric-footer {
+    font-size: 0.68rem;
+    line-height: 1.18;
+    overflow-wrap: anywhere;
+  }
+
+  .metric-value {
+    font-size: 2.05rem;
+    letter-spacing: 0;
+  }
+
+  #card-resistance .metric-value-container {
+    min-width: 96px;
+    gap: 3px;
+  }
+
+  #card-resistance .metric-value {
+    font-size: 1.5rem;
+  }
+
+  #card-resistance .metric-unit {
+    font-size: 0.72rem;
+  }
+
+  .metric-value-compact {
+    font-size: 1.1rem;
+  }
+
+  .text-timer {
+    font-size: 1.32rem;
+  }
+
+  .btn-adjust {
+    width: 26px;
+    height: 26px;
+    font-size: 0.95rem;
+  }
+
+  .app-footer {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: calc(env(safe-area-inset-bottom) + 8px);
+    z-index: 1300;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border-radius: 16px;
+    background: rgba(21, 23, 32, 0.94);
+  }
+
+  .footer-left {
+    gap: 10px;
+    align-items: center;
+  }
+
+  .footer-title,
+  .milestone {
+    display: none;
+  }
+
+  .distance-badge {
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .ride-footer-stats {
+    grid-template-columns: auto auto;
+    gap: 10px;
+  }
+
+  .footer-time-value {
+    font-size: 0.96rem;
+    white-space: nowrap;
+  }
+
+  .footer-state {
+    font-size: 0.62rem;
+    white-space: nowrap;
+  }
+
+  .virtual-road-bar-container {
+    min-width: 0;
+    width: 100%;
+    height: 16px;
+    margin: 0;
+  }
+
+  .virtual-rider-avatar {
+    font-size: 1rem;
+  }
+
+  .footer-controls {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .footer-controls .btn {
+    justify-content: center;
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+  .history-section {
+    gap: 12px;
+  }
+
+  .weekly-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .weekly-stat-item {
+    padding: 10px 6px;
+  }
+
+  .weekly-stat-val {
+    font-size: 1.2rem;
+  }
+
+  .weekly-stat-lbl {
+    font-size: 0.66rem;
+  }
+
+  .history-list-container {
+    max-height: 220px;
+  }
+
+  .history-item {
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .summary-stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .health-import-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .health-import-panel .btn {
+    justify-content: center;
+  }
+}
+
+/* 針對小螢幕 iPhone 的細緻調整 */
+@media (max-width: 480px) {
+  .card {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .card-title {
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+
+  .btn {
+    padding: 10px 12px;
+    font-size: 0.84rem;
+    gap: 6px;
+  }
+
+  .controls-panel {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px;
+  }
+
+  .connection-group {
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+
+  .user-switcher-container,
+  .toggle-container {
+    padding: 5px 7px;
+  }
+
+  .select-input,
+  .toggle-label {
+    font-size: 0.76rem;
+  }
+
+  .btn-icon-only-btn {
+    min-height: 34px;
+    padding: 7px;
+    font-size: 0.74rem;
+  }
+
+  .visual-card {
+    min-height: auto;
+  }
+
+  .visualizer-container {
+    height: 74px;
+  }
+
+  .cyclist-svg-wrapper {
+    width: 124px;
+  }
+
+  .ride-feedback {
+    font-size: 1.12rem;
+    padding: 14px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metric-card {
+    min-height: 76px;
+    padding: 6px;
+  }
+
+  .metric-value {
+    font-size: 1.9rem;
+  }
+
+  .metric-unit {
+    font-size: 0.72rem;
+  }
+
+  .metric-value-compact {
+    font-size: 1rem;
+  }
+
+  .text-timer {
+    font-size: 1.18rem;
+  }
+
+  .virtual-road-bar-container {
+    min-width: 100%;
+  }
+
+  .weekly-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-overlay {
+    align-items: center;
+    padding: calc(env(safe-area-inset-top) + 10px) 10px calc(env(safe-area-inset-bottom) + 10px);
+  }
+
+  .modal-card {
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px);
+    border-radius: 18px;
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .modal-title {
+    font-size: 1.08rem;
+  }
+
+  .modal-back-btn {
+    width: auto;
+    min-height: 34px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .modal-footer-actions {
+    margin-left: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) and (max-height: 720px) {
+  .app-container {
+    padding: calc(env(safe-area-inset-top) + 4px) 10px calc(env(safe-area-inset-bottom) + 116px);
+    gap: 8px;
+  }
+
+  .app-header {
+    gap: 5px;
+    padding-bottom: 5px;
+  }
+
+  .logo-icon {
+    font-size: 1.35rem;
+  }
+
+  .brand h1 {
+    font-size: 0.92rem;
+  }
+
+  .controls-panel,
+  .connection-group {
+    gap: 4px;
+  }
+
+  .user-switcher-container,
+  .toggle-container {
+    min-height: 32px;
+    padding: 4px 6px;
+  }
+
+  .connection-group .btn,
+  .btn-icon-only-btn {
+    min-height: 32px;
+    padding: 5px 6px;
+    font-size: 0.72rem;
+  }
+
+  .feedback-card {
+    padding: 10px;
+  }
+
+  .ride-feedback {
+    font-size: 1.04rem;
+    line-height: 1.35;
+    padding: 10px;
+  }
+
+  .metric-card {
+    min-height: 74px;
+    padding: 6px;
+  }
+
+  .metric-value {
+    font-size: 1.75rem;
+  }
+
+  .metric-footer {
+    font-size: 0.62rem;
+  }
+
+  .btn-adjust {
+    width: 26px;
+    height: 26px;
+  }
+
+  .visual-card {
+    padding: 8px;
+  }
+
+  .visualizer-container {
+    height: 48px;
+  }
+
+  .cyclist-svg-wrapper {
+    width: 84px;
+  }
+
+  .app-footer {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .footer-controls {
+    gap: 6px;
+  }
+
+  .footer-controls .btn {
+    padding: 8px;
+  }
+}

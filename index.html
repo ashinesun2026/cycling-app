@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>飛輪騎行訓練儀表板</title>
-  <link rel="stylesheet" href="style.css?v=2.26">
-  <!-- 載入 Google Fonts 設計字型 -->
+  <title>Antigravity Cycling // 飛輪訓練儀表板</title>
+  <!-- 引入 Google Fonts (Outfit 用於電子數據，Noto Sans TC 用於繁中字體) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+TC:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Noto+Sans+TC:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <!-- iOS / 非藍牙環境專屬提示橫幅 -->
@@ -24,382 +24,236 @@
     <header class="app-header">
       <div class="brand">
         <span class="logo-icon">⚡</span>
-        <h1>Antigravity Cycling</h1>
+        <div class="brand-text">
+          <h1>Antigravity</h1>
+          <span class="subtitle">// CYCLING</span>
+        </div>
       </div>
 
-      <!-- 使用者選擇與連線控制 -->
-      <div class="controls-panel">
-        <!-- 多使用者選單 -->
-        <div class="user-switcher-container">
-          <select id="user-select" class="select-input">
-            <!-- 由 JS 動態渲染 -->
-          </select>
-          <button id="btn-edit-profile" class="btn-icon-only" title="編輯個人檔案">⚙️</button>
-        </div>
-
-        <!-- 模擬器切換開關 -->
-        <div class="toggle-container">
-          <label class="switch">
-            <input type="checkbox" id="demo-mode-toggle">
-            <span class="slider round"></span>
-          </label>
-          <span class="toggle-label">模擬騎行</span>
-        </div>
-
-        <!-- 藍牙連線按鈕與說明 -->
-        <div class="connection-group">
-          <button id="btn-connect-bike" class="btn btn-primary">
-            <span class="btn-icon">🚴</span>
-            <span id="bike-conn-text">連線飛輪</span>
-          </button>
-          <button id="btn-help-guide" class="btn-icon-only-btn" title="飛輪連線與健康匯入說明">❓ 使用說明</button>
-        </div>
+      <!-- 藍牙與開始控制按鈕 -->
+      <div class="header-controls">
+        <button id="btn-connect-bike" class="btn btn-primary-outline">
+          <span class="btn-icon">🚴</span>
+          <span id="bike-conn-text">連結飛輪</span>
+        </button>
+        
+        <button id="btn-play-pause" class="btn btn-primary" disabled>
+          <span id="val-state-text">開始</span>
+        </button>
+        
+        <button id="btn-help-guide" class="btn-icon-only-btn" title="使用說明">❓ 使用說明</button>
       </div>
     </header>
 
     <!-- 主體內容區 (格狀版面) -->
     <main class="app-main">
-      <!-- 左側：目標模式與視覺化 -->
+      
+      <!-- 中間/左側：運動設定與即時圖表 -->
       <section class="left-section">
-        <!-- 運動目標/強度選擇 -->
+        <!-- 模式選擇 (5大課表頁籤) -->
         <div class="card workout-card">
-          <h2 class="card-title">今日運動目標</h2>
+          <div class="card-title-row">
+            <span class="title-label">模式選擇</span>
+          </div>
           <div class="workout-options">
-            <button class="workout-btn active" id="mode-free" data-mode="free">
-              <div class="mode-header">
-                <span class="mode-badge badge-free">自由</span>
-                <h3>自由騎行</h3>
-              </div>
-              <p>無限制。手動調整阻力，依自己的步調前進。</p>
+            <button class="workout-btn active" id="mode-personalized" data-mode="personalized">
+              <span class="mode-badge badge-personal">建議</span>
+              <span class="mode-name">建議模式</span>
             </button>
-
-            <button class="workout-btn" id="mode-recovery" data-mode="recovery">
-              <div class="mode-header">
-                <span class="mode-badge badge-easy">輕鬆</span>
-                <h3>恢復騎</h3>
-              </div>
-              <p>低阻力 / 15 分鐘。放鬆腿部，找回踩踏節奏。</p>
-            </button>
-
             <button class="workout-btn" id="mode-endurance" data-mode="endurance">
-              <div class="mode-header">
-                <span class="mode-badge badge-moderate">有氧</span>
-                <h3>有氧耐力</h3>
-              </div>
-              <p>穩定輸出 / 30 分鐘。建立基礎心肺與長時間節奏。</p>
+              <span class="mode-badge badge-moderate">有氧</span>
+              <span class="mode-name">有氧耐力</span>
             </button>
-
-            <button class="workout-btn hidden" id="mode-personalized" data-mode="personalized">
-              <div class="mode-header">
-                <span class="mode-badge badge-personal">建議</span>
-                <h3>下次訓練</h3>
-              </div>
-              <p id="personalized-mode-desc">健康資料匯入後自動產生。</p>
-            </button>
-
             <button class="workout-btn" id="mode-tempo" data-mode="tempo">
-              <div class="mode-header">
-                <span class="mode-badge badge-tempo">節奏</span>
-                <h3>燃脂節奏</h3>
-              </div>
-              <p>22 分鐘分段加壓。暖身、節奏建立、高峰巡航、最後緩和。</p>
+              <span class="mode-badge badge-tempo">甜蜜點</span>
+              <span class="mode-name">甜蜜點</span>
             </button>
-
-            <button class="workout-btn" id="mode-cadence" data-mode="cadence">
-              <div class="mode-header">
-                <span class="mode-badge badge-spin">穩踩</span>
-                <h3>穩踩肌耐力</h3>
-              </div>
-              <p>中高阻力穩定踩壓。避開高轉低阻，訓練腿部控制。</p>
-            </button>
-
             <button class="workout-btn" id="mode-climb" data-mode="climb">
-              <div class="mode-header">
-                <span class="mode-badge badge-climb">爬坡</span>
-                <h3>爬坡肌耐力</h3>
-              </div>
-              <p>高阻力低踏頻。訓練腿力與穩定推踩控制。</p>
+              <span class="mode-badge badge-climb">爬坡</span>
+              <span class="mode-name">間歇爬坡</span>
             </button>
-
-            <button class="workout-btn" id="mode-interval" data-mode="interval">
-              <div class="mode-header">
-                <span class="mode-badge badge-hard">挑戰</span>
-                <h3>間歇挑戰</h3>
-              </div>
-              <p>14 分鐘間歇。暖身後三組高強度與恢復，最後兩分鐘緩和。</p>
-            </button>
-
-            <button class="workout-btn" id="mode-pyramid" data-mode="pyramid">
-              <div class="mode-header">
-                <span class="mode-badge badge-hard">進階</span>
-                <h3>金字塔課表</h3>
-              </div>
-              <p>20 分鐘低轉高張力金字塔。漸進加壓、最高點、下降控制。</p>
+            <button class="workout-btn" id="mode-recovery" data-mode="recovery">
+              <span class="mode-badge badge-easy">恢復</span>
+              <span class="mode-name">有氧恢復</span>
             </button>
           </div>
+          <p id="personalized-mode-desc" class="mode-desc">載入上一次訓練結算推薦的個人化課表...</p>
+        </div>
 
-          <!-- 分段課表計時面板 (預設隱藏) -->
-          <div id="interval-panel" class="interval-panel hidden">
-            <div class="interval-status">
-              <span class="interval-phase" id="interval-phase">熱身中</span>
-              <span class="interval-timer" id="interval-timer">00:00</span>
-            </div>
-            <div class="progress-bar-container">
-              <div class="progress-bar-fill" id="interval-progress"></div>
-            </div>
-            <div class="interval-next-tip" id="interval-next-tip">下一階段：高強度 (阻力第 10 段) 02:00 後開始</div>
+        <!-- 30分鐘全程騎乘對標折線圖 -->
+        <div class="card chart-card">
+          <div class="chart-header">
+            <span class="chart-title">30分鐘全程數據與目標對標折線圖</span>
+            <span id="trendBadge" class="trend-badge">🟢 踏頻穩定中 ➔</span>
+          </div>
+          <div id="trendChartContainer">
+            <canvas id="trendCanvas"></canvas>
           </div>
         </div>
 
-        <!-- 騎行即時回饋 -->
+        <!-- 加大即時踩踏回饋文字窗格 -->
         <div class="card feedback-card">
           <div class="ride-feedback" id="ride-feedback">
-            先踩出穩定節奏，系統會依目前踏頻、阻力與時間給你下一步。
+            請點擊「連結飛輪」並踩踏，或點擊「開始」進行手動訓練。
           </div>
         </div>
 
-        <!-- 騎行狀態動畫視覺化 -->
-        <div class="card visual-card">
-          <div class="visualizer-container">
-            <div class="visual-mode-label" id="visual-mode-label">目前模式｜自由騎行</div>
-            <!-- 虛擬路段線條 (會滑動) -->
-            <div class="scrolling-road-bg">
-              <div class="road-line"></div>
-              <div class="road-line"></div>
-              <div class="road-line"></div>
-              <div class="road-line"></div>
-              <div class="road-line"></div>
+        <!-- 即時數據六宮格 (加大數值排版) -->
+        <div class="metrics-grid">
+          <!-- 時間 Card -->
+          <div class="card metric-card" id="card-time">
+            <span class="metric-lbl">時間</span>
+            <div class="value-container">
+              <span class="metric-value white-text" id="val-time">00:00:00</span>
             </div>
+            <span class="metric-trend" id="interval-phase">未開始</span>
+          </div>
 
-            <!-- 自行車動態 SVG -->
-            <div class="cyclist-svg-wrapper">
-              <svg viewBox="0 0 320 220" class="cyclist-svg">
-                <!-- 自行車陰影 -->
-                <ellipse cx="160" cy="190" rx="110" ry="8" fill="rgba(0,0,0,0.25)" />
-                
-                <!-- 車架細節與鏈條 -->
-                <circle cx="70" cy="150" r="10" fill="none" stroke="#45A29E" stroke-width="2" />
-                <circle cx="160" cy="150" r="18" fill="none" stroke="#45A29E" stroke-width="2" />
-                <line x1="70" y1="140" x2="160" y2="132" stroke="#45A29E" stroke-width="1.5" stroke-dasharray="2,2" />
-                <line x1="70" y1="160" x2="160" y2="168" stroke="#45A29E" stroke-width="1.5" stroke-dasharray="2,2" />
-                
-                <!-- 後輪 (Back Wheel) -->
-                <g id="back-wheel" class="svg-wheel">
-                  <circle cx="70" cy="150" r="42" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6" />
-                  <circle cx="70" cy="150" r="40" fill="none" stroke="#45A29E" stroke-width="2.5" />
-                  <!-- 輪輻 -->
-                  <line x1="70" y1="110" x2="70" y2="190" stroke="#45A29E" stroke-width="1" />
-                  <line x1="30" y1="150" x2="110" y2="150" stroke="#45A29E" stroke-width="1" />
-                  <line x1="41.7" y1="121.7" x2="98.3" y2="178.3" stroke="#45A29E" stroke-width="1" />
-                  <line x1="41.7" y1="178.3" x2="98.3" y2="121.7" stroke="#45A29E" stroke-width="1" />
-                  <circle cx="70" cy="150" r="6" fill="#1f2833" />
-                </g>
-
-                <!-- 前輪 (Front Wheel) -->
-                <g id="front-wheel" class="svg-wheel">
-                  <circle cx="250" cy="150" r="42" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6" />
-                  <circle cx="250" cy="150" r="40" fill="none" stroke="#45A29E" stroke-width="2.5" />
-                  <!-- 輪輻 -->
-                  <line x1="250" y1="110" x2="250" y2="190" stroke="#45A29E" stroke-width="1" />
-                  <line x1="210" y1="150" x2="290" y2="150" stroke="#45A29E" stroke-width="1" />
-                  <line x1="221.7" y1="121.7" x2="278.3" y2="178.3" stroke="#45A29E" stroke-width="1" />
-                  <line x1="221.7" y1="178.3" x2="278.3" y2="121.7" stroke="#45A29E" stroke-width="1" />
-                  <circle cx="250" cy="150" r="6" fill="#1f2833" />
-                </g>
-
-                <!-- 車架主體 (Tubes) -->
-                <g stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none">
-                  <path d="M 70,150 L 125,75 L 235,75 L 160,150 Z" />
-                  <path d="M 125,75 L 120,68" />
-                  <path d="M 160,150 L 242,65" />
-                  <path d="M 250,150 L 240,60" />
-                  <path d="M 233,60 L 247,60 L 255,68" />
-                </g>
-                <path d="M 110,68 L 133,68" stroke="#ffffff" stroke-width="5" stroke-linecap="round" fill="none" />
-
-                <!-- 曲柄與踏板 (Crank & Pedals) -->
-                <g id="crankset">
-                  <circle cx="160" cy="150" r="12" fill="#1f2833" stroke="#ffffff" stroke-width="2" />
-                  <line x1="160" y1="150" x2="160" y2="115" stroke="#ffffff" stroke-width="4" stroke-linecap="round" />
-                  <line x1="152" y1="115" x2="168" y2="115" stroke="#ffb400" stroke-width="4" stroke-linecap="round" />
-                  <line x1="160" y1="150" x2="160" y2="185" stroke="#45A29E" stroke-width="4" stroke-linecap="round" opacity="0.7" />
-                  <line x1="152" y1="185" x2="168" y2="185" stroke="#ffb400" stroke-width="4" stroke-linecap="round" opacity="0.7" />
-                </g>
-
-                <!-- 騎乘者骨架 -->
-                <g id="cyclist-body" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none">
-                  <circle cx="175" cy="40" r="10" fill="#ffffff" stroke="none" />
-                  <path d="M 175,50 L 155,95" />
-                  <path d="M 170,55 L 210,65 L 243,62" />
-                  <path id="leg-right" d="M 155,95 L 180,120 L 160,115" stroke="#66fcf1" />
-                  <path id="leg-left" d="M 155,95 L 140,140 L 160,185" stroke="#45a29e" opacity="0.6" />
-                </g>
-              </svg>
+          <!-- 距離 Card -->
+          <div class="card metric-card" id="card-distance">
+            <span class="metric-lbl">距離</span>
+            <div class="value-container">
+              <span class="metric-value white-text" id="val-distance">0.00</span>
+              <span class="metric-unit">公里</span>
             </div>
+            <span class="metric-trend" id="road-progress-text">目標: 10.00 km</span>
           </div>
-        </div>
 
-        <!-- 健康匯入 Card -->
-        <div class="card metric-card health-feedback-card" id="card-hr">
-          <div class="metric-header">
-            <span class="metric-title">健康回饋</span>
-            <span class="metric-icon text-red">📥</span>
+          <!-- 卡路里 Card -->
+          <div class="card metric-card" id="card-calories">
+            <span class="metric-lbl">卡路里</span>
+            <div class="value-container">
+              <span class="metric-value orange-text" id="val-calories">0</span>
+              <span class="metric-unit">千卡</span>
+            </div>
+            <span class="metric-trend" id="calorie-rate">0 kcal/hr</span>
           </div>
-          <div class="metric-value-container">
-            <span class="metric-value metric-value-compact" id="val-hr">待匯入</span>
-            <span class="metric-unit"></span>
-          </div>
-          <div class="metric-footer">
-            <span class="metric-trend" id="hr-zone">訓練後用捷徑補完健康資料</span>
-          </div>
-          <button id="btn-health-import" class="btn btn-secondary health-card-import-btn">
-            <span class="btn-icon">📥</span>
-            <span id="health-import-text">匯入健康</span>
-          </button>
-        </div>
-      </section>
 
-      <!-- 右側：六宮格數據看版 -->
-      <section class="right-section dashboard-grid">
-        <!-- 功率 Card -->
-        <div class="card metric-card" id="card-power">
-          <div class="metric-header">
-            <span class="metric-title">即時功率</span>
-            <span class="metric-icon text-yellow">⚡</span>
+          <!-- 功率 Card -->
+          <div class="card metric-card" id="card-power">
+            <span class="metric-lbl">功率</span>
+            <div class="value-container">
+              <span class="metric-value yellow-text" id="val-power">0</span>
+              <span class="metric-unit">瓦</span>
+            </div>
+            <span class="metric-trend" id="target-power-zone">目標功率: --</span>
           </div>
-          <div class="metric-value-container">
-            <span class="metric-value" id="val-power">0</span>
-            <span class="metric-unit">W</span>
-          </div>
-          <div class="metric-footer">
-            <span class="metric-trend" id="target-power-zone">目標瓦數: --</span>
-          </div>
-        </div>
 
-        <!-- 踏頻 Card -->
-        <div class="card metric-card" id="card-cadence">
-          <div class="metric-header">
-            <span class="metric-title">目前踏頻</span>
-            <span class="metric-icon text-green">🔄</span>
-          </div>
-          <div class="metric-value-container">
-            <span class="metric-value" id="val-cadence">0</span>
-            <span class="metric-unit">RPM</span>
-          </div>
-          <div class="metric-footer">
+          <!-- 踏頻 Card (無按鈕) -->
+          <div class="card metric-card" id="card-cadence">
+            <span class="metric-lbl">踏頻</span>
+            <div class="value-container">
+              <span class="metric-value green-text" id="val-cadence">0</span>
+              <span class="metric-unit">RPM</span>
+            </div>
             <span class="metric-trend" id="cadence-status">靜止中</span>
           </div>
-        </div>
 
-        <!-- 阻力強度 Card -->
-        <div class="card metric-card" id="card-resistance">
-          <div class="metric-header">
-            <span class="metric-title">飛輪阻力</span>
-            <span class="metric-icon text-blue">⚙️</span>
-          </div>
-          <div class="metric-value-container resistance-control-layout">
-            <button class="btn-adjust" id="btn-res-dec">−</button>
-            <div class="res-display">
-              <span class="metric-value" id="val-resistance">0</span>
-              <span class="metric-unit">段</span>
+          <!-- 阻力強度 Card (保留大觸控調整按鈕) -->
+          <div class="card metric-card" id="card-resistance">
+            <span class="metric-lbl">阻力</span>
+            <div class="resistance-control-layout">
+              <button class="btn-adjust" id="btn-res-dec">−</button>
+              <div class="res-display">
+                <span class="metric-value blue-text" id="val-resistance">0</span>
+                <span class="metric-unit">段</span>
+              </div>
+              <button class="btn-adjust" id="btn-res-inc">＋</button>
             </div>
-            <button class="btn-adjust" id="btn-res-inc">＋</button>
-          </div>
-          <div class="metric-footer">
             <span class="metric-trend" id="res-range">手動微調</span>
           </div>
         </div>
 
-        <!-- 卡路里 Card -->
-        <div class="card metric-card" id="card-calories">
-          <div class="metric-header">
-            <span class="metric-title">消耗熱量</span>
-            <span class="metric-icon text-orange">🔥</span>
+        <!-- 訓練中健康數據與自適應重設課表 (非騎行主數據) -->
+        <div class="hidden-fields" style="display: none;">
+          <span id="val-hr">0</span>
+          <span id="hr-zone">--</span>
+        </div>
+      </section>
+
+      <!-- 右側面板：使用者 Profile & 歷史備份 (手機版 contents 分開) -->
+      <section class="right-section">
+        
+        <!-- 使用者設定檔 -->
+        <div class="card user-profile-card">
+          <div class="card-title-row">
+            <span class="title-label">使用者設定檔</span>
+            <button id="btn-edit-profile" class="btn-icon-only" title="編輯個人檔案">⚙️ 編輯</button>
           </div>
-          <div class="metric-value-container">
-            <span class="metric-value" id="val-calories">0</span>
-            <span class="metric-unit">kcal</span>
+          <div class="user-select-wrapper">
+            <select id="user-select" class="select-input">
+              <!-- 由 JS 動態渲染 -->
+            </select>
           </div>
-          <div class="metric-footer">
-            <span class="metric-trend" id="calorie-rate">0 kcal/hr</span>
+        </div>
+
+        <!-- 本週累計面板 -->
+        <div class="card weekly-stats-card">
+          <h2 class="card-title">本週運動累計</h2>
+          <div class="weekly-stats-grid">
+            <div class="weekly-stat-item">
+              <span class="weekly-stat-val" id="weekly-count">0</span>
+              <span class="weekly-stat-lbl">騎行次數</span>
+            </div>
+            <div class="weekly-stat-item">
+              <span class="weekly-stat-val" id="weekly-time">0m</span>
+              <span class="weekly-stat-lbl">總時間</span>
+            </div>
+            <div class="weekly-stat-item">
+              <span class="weekly-stat-val" id="weekly-calories">0</span>
+              <span class="weekly-stat-lbl">卡路里</span>
+            </div>
+            <div class="weekly-stat-item">
+              <span class="weekly-stat-val" id="weekly-distance">0.0</span>
+              <span class="weekly-stat-lbl">總里程</span>
+            </div>
           </div>
+          <!-- 週運動 SVG 趨勢圖 -->
+          <div class="weekly-chart-wrapper">
+            <svg id="weekly-svg-chart" viewBox="0 0 300 70"></svg>
+          </div>
+        </div>
+
+        <!-- 歷史紀錄列表 -->
+        <div class="card history-list-card">
+          <div class="card-header-with-actions">
+            <h2 class="card-title">歷史騎行紀錄</h2>
+            <div class="history-actions">
+              <button id="btn-export-history" class="btn-link" type="button">📤 上傳備份</button>
+              <button id="btn-import-history" class="btn-link" type="button">📥 下載還原</button>
+              <span id="sync-code-display" class="sync-code-badge" title="點擊修改同步碼" style="display: none;"></span>
+            </div>
+          </div>
+          <div class="history-list-container">
+            <ul id="history-list" class="history-list">
+              <li class="no-records">尚未有騎行紀錄。</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 隱藏的舊專案相容按鈕 -->
+        <div style="display:none;">
+          <button id="btn-health-import">健康匯入</button>
+          <span id="health-import-text"></span>
+          <span id="visual-mode-label"></span>
+          <div id="road-progress"></div>
+          <div id="road-avatar"></div>
+          <div id="interval-panel"></div>
+          <div id="interval-timer"></div>
+          <div id="interval-progress"></div>
+          <div id="interval-next-tip"></div>
         </div>
       </section>
     </main>
 
-    <!-- 底部：虛擬路段進度條 -->
-    <footer class="app-footer card">
-      <div class="footer-left ride-footer-stats">
-        <div class="ride-footer-stat">
-          <span class="footer-title">騎行里程</span>
-          <div class="distance-badge"><span id="val-distance">0.00</span> km</div>
-        </div>
-        <div class="ride-footer-stat ride-footer-time">
-          <span class="footer-title">運動時間</span>
-          <div class="footer-time-value" id="val-time">00:00:00</div>
-          <span class="footer-state" id="val-state-text">未開始</span>
-        </div>
-      </div>
-      <div class="virtual-road-bar-container">
-        <div class="virtual-road-fill" id="road-progress" style="width: 0%"></div>
-        <div class="virtual-rider-avatar" id="road-avatar" style="left: 0%">🚴</div>
-        <div class="milestone ms-start">起點</div>
-        <div class="milestone ms-mid-1" style="left: 33%">3.3 km</div>
-        <div class="milestone ms-mid-2" style="left: 66%">6.6 km</div>
-        <div class="milestone ms-end">10 km (終點)</div>
-      </div>
-      <div class="footer-controls">
-        <button id="btn-play-pause" class="btn btn-primary" disabled>手動開始</button>
-        <button id="btn-reset" class="btn btn-secondary">結束並存檔</button>
-      </div>
+    <!-- 置底固定控制大按鈕 -->
+    <footer class="app-footer">
+      <button id="btn-reset" class="btn btn-danger">結束並存檔</button>
     </footer>
-
-    <!-- 歷史紀錄與運動建議區塊 -->
-    <section class="history-section">
-      <!-- 本週累計面板 -->
-      <div class="card weekly-stats-card">
-        <h2 class="card-title">本週運動累計</h2>
-        <div class="weekly-stats-grid">
-          <div class="weekly-stat-item">
-            <span class="weekly-stat-val" id="weekly-count">0</span>
-            <span class="weekly-stat-lbl">騎行次數</span>
-          </div>
-          <div class="weekly-stat-item">
-            <span class="weekly-stat-val" id="weekly-time">0m</span>
-            <span class="weekly-stat-lbl">總時間</span>
-          </div>
-          <div class="weekly-stat-item">
-            <span class="weekly-stat-val" id="weekly-calories">0</span>
-            <span class="weekly-stat-lbl">燃燒卡路里 (kcal)</span>
-          </div>
-          <div class="weekly-stat-item">
-            <span class="weekly-stat-val" id="weekly-distance">0.0</span>
-            <span class="weekly-stat-lbl">總距離 (km)</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 歷史紀錄列表 -->
-      <div class="card history-list-card">
-        <div class="card-header-with-actions">
-          <h2 class="card-title">歷史騎行紀錄</h2>
-          <div class="history-actions">
-            <button id="btn-export-history" class="btn-link" type="button">📤 上傳至雲端</button>
-            <button id="btn-import-history" class="btn-link" type="button">📥 從雲端下載</button>
-            <span id="sync-code-display" class="sync-code-badge" title="點擊修改同步碼" style="display: none;"></span>
-          </div>
-        </div>
-        <div class="history-list-container">
-          <ul id="history-list" class="history-list">
-            <li class="no-records">尚未有騎行紀錄，連線飛輪後開始踩踏，或點「手動開始」建立第一次訓練。</li>
-          </ul>
-        </div>
-      </div>
-    </section>
     
-    <!-- 快取版本檢測標籤 -->
-    <div style="text-align:center; padding:15px; font-size:11px; color:#555; font-family:monospace; border-top:1px dashed rgba(255,255,255,0.05); margin-top:20px;">
-      網頁快取檢測版本：<strong>v2.26 (2026-06-05 23:10)</strong>
+    <!-- 網頁快取檢測版本 -->
+    <div class="version-tag">
+      網頁快取檢測版本：<strong>v3.0-Athletic-Chinese (2026-06-07)</strong>
     </div>
   </div>
 
@@ -459,7 +313,7 @@
   <div id="modal-summary" class="modal-overlay hidden">
     <div class="modal-card modal-summary-card">
       <div class="modal-topbar">
-        <button class="modal-back-btn" type="button" data-close-modal="modal-summary">← 返回</button>
+        <button class="modal-back-btn" type="button" data-close-modal="modal-summary">← 返回主畫面</button>
       </div>
       <div class="summary-success-badge">🎉 騎行完成！</div>
       <h3 class="modal-title text-center">今日運動結算報告</h3>
@@ -488,22 +342,22 @@
           </div>
           <div class="summary-stat-item">
             <span class="summary-lbl">健康匯入</span>
-            <span class="summary-val text-red" id="sum-hr">0 / 0 BPM</span>
+            <span class="summary-val text-red" id="sum-hr">未匯入</span>
           </div>
         </div>
 
         <div class="health-import-panel" id="health-import-panel">
           <div>
             <strong>訓練後補完健康資料</strong>
-            <p>跑 iPhone 捷徑或手動輸入 Apple 健康摘要，系統會更新這筆訓練回饋。</p>
+            <p>跑 iPhone 捷徑或手動輸入 Apple 健康摘要，系統會自動生成對比報告與個人化訓練模式建議。</p>
           </div>
           <button id="btn-health-import-summary" class="btn btn-secondary" type="button">匯入健康資料</button>
         </div>
 
         <div class="analysis-report-container">
-          <h4>💡 Antigravity 專屬運動建議與分析</h4>
+          <h4>💡 運動建議與分析回饋</h4>
           <div class="analysis-feedback-bubble">
-            <p id="analysis-text-loading">正在為您產生本次騎行的分析回饋報告...</p>
+            <p id="analysis-text-loading">正在產生您的騎行數據分析回饋報告...</p>
             <div class="advice-sections" id="analysis-report-content">
               <!-- JS 動態插入 -->
             </div>
@@ -530,7 +384,7 @@
 
           <div class="import-mode-box">
             <strong>最快方式</strong>
-            <p>手機騎行：捷徑開網址後會自動匯入。平板騎行：把手機產生的整段網址貼到下面匯入碼，或 AirDrop 到平板開啟。</p>
+            <p>手機騎行：捷徑開網址後會自動匯入。平板騎行：將手機產生的整段網址複製並傳到平板貼入下方解析。</p>
           </div>
 
           <div class="form-row">
@@ -566,7 +420,7 @@
           </div>
 
           <div class="form-group">
-            <label for="health-import-code">貼上捷徑匯入碼或 JSON (可選)</label>
+            <label for="health-import-code">貼上捷徑匯入碼或 URL 參數 (選填)</label>
             <textarea id="health-import-code" rows="3" placeholder='例如 {"avgHr":138,"maxHr":168,"activeKcal":240,"exerciseMin":32,"rpe":7}'></textarea>
           </div>
         </form>
@@ -608,7 +462,7 @@
     </div>
   </div>
 
-  <!-- Modal D: 連線說明引導彈窗 (Troubleshooting Guide) -->
+  <!-- Modal E: 使用說明引導彈窗 -->
   <div id="modal-guide" class="modal-overlay hidden">
     <div class="modal-card modal-guide-card">
       <div class="modal-topbar">
@@ -618,15 +472,15 @@
       <div class="modal-body scrollable-modal-body">
         
         <div class="guide-section">
-          <h4>⚠️ 為什麼我完全搜尋不到任何藍牙裝置？</h4>
+          <h4>⚠️ 為什麼我搜尋不到任何藍牙飛輪？</h4>
           <ol>
             <li>
               <strong>iOS 系統 Bluefy 權限未開啟（最常見）</strong>：<br>
-              請至 iPhone 的<strong>「設定」</strong> ➔ 往下捲動找到 <strong>「Bluefy」</strong> ➔ 確認<strong>「藍牙」權限已開啟（綠色）</strong>。如果沒開啟，瀏覽器會完全被限制掃描。
+              請至 iPhone 的<strong>「設定」</strong> ➔ 往下捲動找到 <strong>「Bluefy」</strong> ➔ 確認<strong>「藍牙」權限已開啟（綠色）</strong>。
             </li>
             <li>
-              <strong>飛輪正被其他軟體佔用</strong>：<br>
-              藍牙設備一次只能連接一個主機。如果您的飛輪已經跟原廠 App、Zwift、或其他手機連上了，請先將它們中斷或強制關閉那些 App。
+              <strong>飛輪已被其他裝置或 App 佔用</strong>：<br>
+              藍牙飛輪一次只能與一台設備配對。請確認已關閉如原廠 App、Zwift、或其他手機的連線。
             </li>
           </ol>
         </div>
@@ -634,39 +488,26 @@
         <hr class="guide-divider">
 
         <div class="guide-section">
-          <h4>訓練後健康資料匯入</h4>
-          <p>本網頁不做訓練中的手錶即時讀取。訓練後用 iPhone 捷徑或手動輸入 Apple 健康摘要，補完分析：</p>
+          <h4>📊 訓練後健康資料匯入說明</h4>
+          <p>本儀表板支援與 Apple Watch 健康摘要進行深度數據融合與智慧分析：</p>
           <ol>
-            <li>跑完後在 Apple Fitness / 健康 App 看本次運動摘要。</li>
-            <li>點「匯入健康」，輸入平均心率、最高心率、主動熱量、運動分鐘、RPE。</li>
-            <li>系統會把健康資料合併到最新訓練紀錄，更新回饋與下次課表建議。</li>
+            <li>騎行完畢後在 iPhone 開啟 Apple「健康」或「健身」App 檢視本次心率與熱量摘要。</li>
+            <li>點選「下載還原」旁的「匯入健康」，輸入平均心率、最高心率、主動熱量、運動分鐘與疲勞感 (RPE)。</li>
+            <li>系統會自動產生「雙源數據對比報告」（包含功率卡路里 vs 手錶主動卡路里對比），並據此生成個人化訓練建議！</li>
           </ol>
         </div>
 
         <hr class="guide-divider">
 
         <div class="guide-section">
-          <h4>iPhone 捷徑自動化設定 (推薦)</h4>
-          <p>請使用 <strong>飛輪健康匯入_自動抓取版_v7_最近12小時.shortcut</strong>。該捷徑會讀取 Apple 健康最近 12 小時自行車資料，並產生匯入網址。</p>
+          <h4>📱 iPhone 捷徑自動化匯入（推薦）</h4>
+          <p>為了使操作最便利，您可以下載與執行捷徑 <strong>飛輪健康匯入_自動抓取版_v7_最近12小時.shortcut</strong>：</p>
           <ul>
-            <li><strong>一鍵執行</strong>：在 iPhone 上執行「飛輪健康匯入_自動抓取版_v7_最近12小時」。</li>
-            <li><strong>自動讀取</strong>：自動撈取最近 12 小時「自行車」相關健康資料。</li>
-            <li><strong>手動自評</strong>：僅需輸入疲勞感 RPE (1-10) 與備忘筆記。</li>
-            <li><strong>複製與啟動</strong>：捷徑會自動將包含數據的網址複製到剪貼簿，並開啟 <strong>BLE Link</strong> App。</li>
-            <li><strong>網頁匯入</strong>：在 BLE Link 中點擊「匯入健康資料」，貼上後點擊「解析匯入碼」➡️「套用到訓練」即可完成補完！</li>
+            <li>捷徑會自動讀取您 iPhone 最近 12 小時內的單車健康數據，免去手動輸入數值。</li>
+            <li>您只需評估目前的 RPE 疲勞感並填入備註。</li>
+            <li>捷徑會自動將包含加密數據的網址複製到您的剪貼簿中。</li>
+            <li>在平板或手機上點擊「匯入健康」➔ 貼上解析，即可一秒補完健康對比報告！</li>
           </ul>
-        </div>
-
-        <hr class="guide-divider">
-
-        <div class="guide-section">
-          <h4>平板騎行時怎麼匯入？</h4>
-          <p>目前資料存在當下瀏覽器。平板騎行的紀錄在平板，手機跑捷徑只會更新手機，不會更新平板。</p>
-          <ol>
-            <li>推薦：手機捷徑產生匯入網址後，用 AirDrop / 通用剪貼簿 / 訊息傳到平板。</li>
-            <li>在平板打開該網址，或在平板點「匯入健康」後貼上整段網址，再按「解析匯入碼」。</li>
-            <li>若要真正同帳號同步，需要之後加雲端資料庫，例如 Firebase / Supabase；現在版本沒有雲端同步。</li>
-          </ol>
         </div>
       </div>
       <div class="modal-footer justify-center">
@@ -675,7 +516,6 @@
     </div>
   </div>
 
-  <!-- 用於載入核心 JS 的程式 -->
-  <script src="app.js?v=2.26-health-target-order"></script>
+  <script src="app.js"></script>
 </body>
 </html>
