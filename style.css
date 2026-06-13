@@ -830,6 +830,88 @@ body {
 }
 
 /* ==========================================
+   RIDING FOCUS MODE
+   ========================================== */
+body.ride-active .app-container {
+  max-width: 1200px;
+}
+
+body.ride-active .app-main {
+  grid-template-columns: 1fr;
+}
+
+body.ride-active .workout-card,
+body.ride-active .right-section,
+body.ride-active .version-tag {
+  display: none;
+}
+
+body.ride-active .left-section {
+  gap: 14px;
+}
+
+body.ride-active .feedback-card {
+  order: -2;
+  padding: 18px 20px;
+  background: rgba(204, 255, 0, 0.08);
+  border-color: rgba(204, 255, 0, 0.5);
+  box-shadow: 0 0 24px rgba(204, 255, 0, 0.12);
+}
+
+body.ride-active .ride-feedback {
+  font-size: 1.35rem;
+  line-height: 1.45;
+}
+
+body.ride-active .metrics-grid {
+  order: -1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+body.ride-active #card-time,
+body.ride-active #card-resistance {
+  grid-column: span 2;
+}
+
+body.ride-active .metric-card {
+  min-height: 142px;
+  padding: 18px;
+  gap: 8px;
+}
+
+body.ride-active .metric-lbl {
+  font-size: 0.95rem;
+}
+
+body.ride-active .metric-value {
+  font-size: 3rem;
+}
+
+body.ride-active #card-time .metric-value,
+body.ride-active #card-resistance .metric-value {
+  font-size: 3.35rem;
+}
+
+body.ride-active .metric-unit {
+  font-size: 0.95rem;
+}
+
+body.ride-active .metric-trend {
+  font-size: 0.9rem;
+  line-height: 1.35;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+body.ride-active .btn-adjust {
+  width: 52px;
+  height: 52px;
+  font-size: 1.75rem;
+}
+
+/* ==========================================
    MODAL WINDOW STYLES
    ========================================== */
 .modal-overlay {
@@ -1211,6 +1293,15 @@ body {
     display: grid;
     grid-template-columns: 1fr;
     gap: 8px;
+    min-width: 0;
+  }
+
+  .app-main > *,
+  .card,
+  .workout-options,
+  .metrics-grid {
+    min-width: 0;
+    max-width: 100%;
   }
 
   /* 5大課表 */
@@ -1249,7 +1340,7 @@ body {
   .metrics-grid {
     grid-column: span 1;
     order: 4;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
   }
 
@@ -1334,6 +1425,376 @@ body {
     grid-column: span 1;
     order: 9;
     padding: 10px 0;
+  }
+}
+
+@media (max-width: 768px) {
+  body.ride-active .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+
+  body.ride-active .workout-card,
+  body.ride-active .chart-card,
+  body.ride-active .user-profile-card,
+  body.ride-active .weekly-stats-card,
+  body.ride-active .history-list-card,
+  body.ride-active .version-tag {
+    display: none;
+  }
+
+  body.ride-active .feedback-card {
+    order: 1;
+    padding: 14px;
+    border-width: 2px;
+  }
+
+  body.ride-active .ride-feedback {
+    font-size: 1.08rem;
+    line-height: 1.55;
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+  }
+
+  body.ride-active .metrics-grid {
+    order: 2;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  body.ride-active #card-time {
+    order: 1;
+    grid-column: 1 / -1;
+  }
+
+  body.ride-active #card-cadence {
+    order: 2;
+  }
+
+  body.ride-active #card-power {
+    order: 3;
+  }
+
+  body.ride-active #card-resistance {
+    order: 4;
+    grid-column: 1 / -1;
+  }
+
+  body.ride-active #card-distance {
+    order: 5;
+  }
+
+  body.ride-active #card-calories {
+    order: 6;
+  }
+
+  body.ride-active .metric-card {
+    min-height: 132px;
+    padding: 14px;
+  }
+
+  body.ride-active .metric-lbl {
+    font-size: 0.95rem;
+  }
+
+  body.ride-active .metric-value {
+    font-size: 2.55rem;
+  }
+
+  body.ride-active #card-time .metric-value {
+    font-size: 2.95rem;
+  }
+
+  body.ride-active #card-cadence .metric-value,
+  body.ride-active #card-power .metric-value,
+  body.ride-active #card-resistance .metric-value {
+    font-size: 3.05rem;
+  }
+
+  body.ride-active .metric-unit {
+    font-size: 0.9rem;
+  }
+
+  body.ride-active .metric-trend {
+    font-size: 0.88rem;
+  }
+
+  body.ride-active .app-footer {
+    order: 3;
+    position: static;
+    width: 100%;
+  }
+}
+
+/* iPhone 13 mini / 12 mini：375px viewport 專用 */
+@media (max-width: 390px) {
+  .app-container {
+    padding: 8px;
+    gap: 10px;
+    padding-bottom: 8px;
+  }
+
+  .warning-banner {
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    gap: 10px;
+  }
+
+  .app-header {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .brand {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .logo-icon {
+    font-size: 1.65rem;
+  }
+
+  .brand-text h1 {
+    font-size: 1.25rem;
+    letter-spacing: 0.8px;
+  }
+
+  .brand-text .subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+  }
+
+  .header-controls {
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .btn {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .workout-card,
+  .chart-card,
+  .feedback-card,
+  .metric-card,
+  .user-profile-card,
+  .weekly-stats-card,
+  .history-list-card {
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .title-label,
+  .card-header-with-actions .card-title {
+    font-size: 0.9rem;
+  }
+
+  .workout-options {
+    gap: 10px;
+    padding-bottom: 8px;
+  }
+
+  .workout-btn {
+    min-width: 108px;
+    min-height: 66px;
+    padding: 10px 12px;
+  }
+
+  .mode-badge {
+    font-size: 0.72rem;
+    padding: 3px 7px;
+  }
+
+  .mode-name {
+    font-size: 0.92rem;
+  }
+
+  .mode-desc {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-top: 10px;
+  }
+
+  .chart-header {
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .chart-title {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  .trend-badge {
+    font-size: 0.78rem;
+    white-space: nowrap;
+    padding: 4px 8px;
+  }
+
+  #trendChartContainer {
+    height: 168px;
+  }
+
+  .ride-feedback {
+    font-size: 0.98rem;
+    line-height: 1.55;
+  }
+
+  .metrics-grid {
+    gap: 10px;
+  }
+
+  #card-time,
+  #card-resistance {
+    grid-column: 1 / -1;
+  }
+
+  .metric-card {
+    min-height: 116px;
+    gap: 6px;
+  }
+
+  .metric-lbl {
+    font-size: 0.88rem;
+    letter-spacing: 0.3px;
+  }
+
+  .metric-value {
+    font-size: 2.05rem;
+  }
+
+  #card-time .metric-value,
+  #card-resistance .metric-value {
+    font-size: 2.45rem;
+  }
+
+  .metric-unit {
+    font-size: 0.85rem;
+  }
+
+  .metric-trend {
+    font-size: 0.82rem;
+    line-height: 1.35;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .resistance-control-layout {
+    gap: 10px;
+  }
+
+  .btn-adjust {
+    width: 48px;
+    height: 48px;
+    font-size: 1.55rem;
+  }
+
+  .select-input,
+  .hist-date,
+  .no-records {
+    font-size: 0.92rem;
+  }
+
+  .weekly-stat-val {
+    font-size: 1.45rem;
+  }
+
+  .weekly-stat-lbl,
+  .hist-meta,
+  .btn-link,
+  .sync-code-badge {
+    font-size: 0.8rem;
+  }
+
+  .app-footer {
+    position: static;
+    width: 100%;
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  .app-footer .btn {
+    max-width: none;
+    min-height: 52px;
+    font-size: 1rem;
+  }
+
+  body.ride-active .app-container {
+    gap: 8px;
+  }
+
+  body.ride-active .app-header {
+    padding: 8px 10px;
+  }
+
+  body.ride-active .brand-text h1 {
+    font-size: 1.15rem;
+  }
+
+  body.ride-active .brand-text .subtitle {
+    font-size: 0.68rem;
+  }
+
+  body.ride-active .feedback-card {
+    padding: 14px;
+    border-radius: 10px;
+  }
+
+  body.ride-active .ride-feedback {
+    font-size: 1.15rem;
+    line-height: 1.55;
+    min-height: 74px;
+  }
+
+  body.ride-active .metrics-grid {
+    gap: 10px;
+  }
+
+  body.ride-active .metric-card {
+    min-height: 126px;
+    padding: 14px;
+  }
+
+  body.ride-active #card-time,
+  body.ride-active #card-resistance {
+    min-height: 136px;
+  }
+
+  body.ride-active .metric-lbl {
+    font-size: 1rem;
+  }
+
+  body.ride-active .metric-value {
+    font-size: 2.6rem;
+  }
+
+  body.ride-active #card-time .metric-value {
+    font-size: 3rem;
+  }
+
+  body.ride-active #card-cadence .metric-value,
+  body.ride-active #card-power .metric-value,
+  body.ride-active #card-resistance .metric-value {
+    font-size: 3.1rem;
+  }
+
+  body.ride-active .metric-unit {
+    font-size: 0.92rem;
+  }
+
+  body.ride-active .metric-trend {
+    font-size: 0.92rem;
+  }
+
+  body.ride-active .btn-adjust {
+    width: 54px;
+    height: 54px;
+    font-size: 1.85rem;
   }
 }
 
